@@ -30,3 +30,12 @@ external bot through a connector.
 - Database changes go through Supabase migrations, never ad hoc edits.
 - Before committing: `npm run lint`, `npx tsc --noEmit` and `npm run build`
   must all pass.
+
+## Working in a Claude cloud session
+
+- Run the site with `NODE_USE_ENV_PROXY=1` (for example
+  `NODE_USE_ENV_PROXY=1 npm run dev`). Without it the site cannot reach
+  Supabase from inside the cloud container, although the database is fine.
+- `/api/health` reports whether the deployment's Supabase settings work.
+  Vercel does not let Claude read or change project settings, so this is
+  how to confirm them after the owner edits them in Vercel.
