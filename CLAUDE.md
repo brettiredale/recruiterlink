@@ -18,6 +18,28 @@ external bot through a connector.
   `recruiterlink2`, which currently serves recruiterlink.com. Reference only.
   Do not change it, and do not copy its code across.
 
+## How changes go live
+
+- Until launch: test each change (lint, types, build, and a run of the
+  affected pages), then put it on `main` directly. The site is private and
+  blocked from search engines, so no real visitor is affected. Use a branch
+  and its Vercel preview only when a change needs checking on Vercel first.
+- From launch day: every change goes to a preview and waits for the owner's
+  approval before it reaches `main`.
+- The owner is not technical. Explain things in plain language, and give
+  click-by-click steps for anything they must do in Vercel, Supabase or
+  GitHub.
+
+## Decisions already made by the owner
+
+- Agency logos from the old export are to be copied into our own storage.
+- The agencies that claimed a listing or paid on the old site carry over
+  with that status. They will need new logins at launch.
+- Dropped or held back from the old data: founded year (wrong), guessed
+  `info@` emails (kept private, unverified, never shown or mailed),
+  scraped testimonials (not republished).
+- Old web addresses (`/agencies/<slug>`) must redirect to their new pages.
+
 ## Rules
 
 - Never commit keys, `.env` files or data exports. Agency and job seeker
