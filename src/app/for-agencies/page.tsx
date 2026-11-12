@@ -45,7 +45,7 @@ const faqs = [
   {
     question: "How do I claim or add my agency?",
     answer:
-      "Choose \"Sign in or list your agency\" on this page and enter your work email address. We email you a six-digit code; there is no password. That confirms you work at the agency whose website matches your email address. If the agency is already listed, you can manage its listing straight away. If it is not, you fill in a short form and the RecruiterLink team checks it before it is published.",
+      "Choose \"Sign in or list your agency\" on this page and enter your work email address. We email you a short code; there is no password. That confirms you work at the agency whose website matches your email address. If the agency is already listed, you can manage its listing straight away. If it is not, you fill in a short form and the RecruiterLink team checks it before it is published.",
   },
   {
     question: "What if I only have a personal email address, such as Gmail?",
@@ -108,7 +108,7 @@ export default async function ForAgenciesPage() {
               <div className="flex flex-col gap-4 text-[17px] text-muted">
                 <p>
                   It is one step for everyone. Sign in with your work email address and we
-                  email you a six-digit code: there is no password. If your agency is already
+                  email you a short code: there is no password. If your agency is already
                   among the {totals.agencyCount.toLocaleString("en")} listed here, its listing
                   becomes yours to manage straight away. If it is not, you can add it.
                 </p>

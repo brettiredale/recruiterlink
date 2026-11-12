@@ -26,7 +26,7 @@ async function Confirm({ searchParams }: { searchParams: PageProps<"/account/con
         </h1>
         <p className="mb-6 text-lg text-muted">
           Part of the link is missing, which can happen when an email program splits it across
-          lines. Use the six-digit code from the same email, or ask for a new one.
+          lines. Use the code from the same email, or ask for a new one.
         </p>
         <Link href={signInPath} className="font-bold text-indigo underline underline-offset-4 hover:text-indigo-deep">
           Go to sign-in

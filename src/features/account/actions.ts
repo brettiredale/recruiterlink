@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendEmail } from "@/lib/email/send";
 import { hasSupabaseSecretKey } from "@/lib/env";
@@ -145,7 +146,7 @@ async function verifySignInCode(_previous: SignInState, formData: FormData): Pro
   const email = parseEmail(formData.get("email"));
   if (!email) return { step: "email", error: "Enter your email address again." };
   const code = parseCode(formData.get("code"));
-  if (!code) return { step: "code", email, error: "Enter the six-digit code from the email." };
+  if (!code) return { step: "code", email, error: "Enter the code from the email. It is numbers only." };
 
   try {
     const allowed = await getSupabaseAdminClient().rpc("allow_code_attempt", { target_email: email });
@@ -310,6 +311,8 @@ export async function saveListing(_previous: ListingFormState, formData: FormDat
       return fail(TRY_AGAIN);
     }
     refreshListingPages(listing);
+    // Redraw the page the person is on with what was just saved.
+    refresh();
   } catch (error) {
     console.error("update_my_listing failed:", error);
     return fail(TRY_AGAIN);
@@ -366,6 +369,8 @@ export async function saveLogo(_previous: LogoFormState, formData: FormData): Pr
       if (removed.error) console.error("Old logo not removed:", removed.error.message);
     }
     refreshListingPages(listing);
+    // Redraw the page the person is on, so they see the new logo at once.
+    refresh();
   } catch (error) {
     console.error("Logo save failed:", error);
     return { status: "error", message: TRY_AGAIN };

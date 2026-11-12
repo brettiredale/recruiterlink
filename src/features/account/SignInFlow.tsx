@@ -6,7 +6,7 @@ import { Field, Notice, SubmitButton, describedBy, inputClass } from "./ui";
 import { ACCOUNT_HONEYPOT_FIELD } from "./validate";
 
 /**
- * Sign-in in two short steps: your work email, then the six-digit code we
+ * Sign-in in two short steps: your work email, then the short code we
  * email you. There is no password to choose or remember.
  */
 export function SignInFlow({ notice }: { notice?: string }) {
@@ -33,7 +33,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
             Check your email
           </h2>
           <p className="text-[17px] text-muted">
-            We have sent a six-digit code to <strong className="text-navy">{view.email}</strong>. It
+            We have sent a sign-in code to <strong className="text-navy">{view.email}</strong>. It
             can take a minute to arrive. If you cannot see it, look in your junk folder.
           </p>
         </div>
@@ -44,7 +44,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
         <form action={action} noValidate className="flex flex-col gap-5">
           <input type="hidden" name="intent" value="verify" />
           <input type="hidden" name="email" value={view.email} />
-          <Field id={codeId} label="Sign-in code" hint="The six digits from the email.">
+          <Field id={codeId} label="Sign-in code" hint="The numbers from the email we just sent.">
             <input
               id={codeId}
               name="code"

@@ -44,10 +44,10 @@ export function emailDomain(email: string): string {
   return email.slice(email.lastIndexOf("@") + 1).toLowerCase();
 }
 
-/** The sign-in code from the email: six to eight digits, spaces ignored. */
+/** The sign-in code from the email: six to ten digits, spaces ignored. */
 export function parseCode(value: unknown): string | null {
   const code = typeof value === "string" ? value.replace(/[\s-]/g, "") : "";
-  return /^\d{6,8}$/.test(code) ? code : null;
+  return /^\d{6,10}$/.test(code) ? code : null;
 }
 
 /** The long one-time value carried by the link in the sign-in email. */

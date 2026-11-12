@@ -25,7 +25,8 @@ test("sign-in codes accept spaces and nothing but digits", () => {
   assert.equal(parseCode(" 123 456 "), "123456");
   assert.equal(parseCode("12345"), null);
   assert.equal(parseCode("12345a"), null);
-  assert.equal(parseCode("123456789"), null);
+  assert.equal(parseCode("12345678"), "12345678");
+  assert.equal(parseCode("12345678901"), null);
 });
 
 test("link tokens and ids must have the expected shape", () => {

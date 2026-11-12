@@ -43,7 +43,7 @@ export default function SignInPage({ searchParams }: PageProps<"/account/sign-in
             <li className="flex gap-3">
               <span className="label-mono mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-sm text-white">1</span>
               <span>
-                <strong className="text-navy">Enter your work email.</strong> We send a six-digit
+                <strong className="text-navy">Enter your work email.</strong> We send a short
                 code to it. No password.
               </span>
             </li>
