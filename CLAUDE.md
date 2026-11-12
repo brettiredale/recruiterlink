@@ -272,3 +272,7 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 - Code: `src/features/account/` (actions, data, emails, validation with tests, forms) and `src/app/account/`. Shared email code moved to `src/lib/email/` (`template.ts`, `send.ts`).
 - Tested 12 Nov 2026 on a local copy with a real sign-in as `brett@recruiterlink.com` (that account now exists and owns the listing `the-recruiter-link`): link confirmation, automatic claim, the account, editor and review pages, a refused and a successful save, sign-out. Database rules tested with pretend users in a rolled-back run. Then tested on the Vercel preview with the secret key in place: the sign-in email arrives in the branded design, a wrong code is refused, the email's button signs in, and logo upload, replace and remove work (a fake image is refused). Not tested by Claude: typing a correct code (Claude cannot read the mailbox; the owner tried the preview before approving), and the emails for access requests, new listings and review decisions, which need a second person or a new agency.
 - Still to build: Premium content (images, video, team, testimonials), Stripe payments, and the Firecrawl/AI auto-fill.
+
+## Visitor statistics
+
+- Plausible (owner's account, added at the owner's request 12 Nov 2026): the script `https://plausible.io/js/pa-M4OyjrooNNHgCJBNLSh4m.js` is loaded by `Analytics` in `src/app/layout.tsx`, only when `VERCEL_ENV` is `production`, so previews and local runs are not counted. It sets no cookies, so no cookie banner is needed for it.

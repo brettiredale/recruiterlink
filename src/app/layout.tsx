@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, Space_Mono } from "next/font/google";
 import { cacheLife } from "next/cache";
+import Script from "next/script";
 import { SiteFooter, SiteHeader } from "@/components";
 import { robotsRule } from "@/lib/indexability";
 import { isIndexable, siteDescription, siteName, siteUrl } from "@/lib/site";
@@ -56,6 +57,26 @@ async function Footer() {
   return <SiteFooter year={new Date().getFullYear()} />;
 }
 
+/**
+ * Visitor statistics by Plausible (the owner's account; no cookies, no
+ * personal data). Loaded only on the live site, so previews and local work
+ * never add to the figures.
+ */
+function Analytics() {
+  if (process.env.VERCEL_ENV !== "production") return null;
+  return (
+    <>
+      <Script id="plausible-init" strategy="afterInteractive">
+        {`window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`}
+      </Script>
+      <Script
+        src="https://plausible.io/js/pa-M4OyjrooNNHgCJBNLSh4m.js"
+        strategy="afterInteractive"
+      />
+    </>
+  );
+}
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -68,6 +89,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
