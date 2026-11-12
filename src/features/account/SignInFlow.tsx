@@ -44,7 +44,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
         <form action={action} noValidate className="flex flex-col gap-5">
           <input type="hidden" name="intent" value="verify" />
           <input type="hidden" name="email" value={view.email} />
-          <Field id={codeId} label="Sign-in code" hint="The numbers from the email we just sent.">
+          <Field id={codeId} label="Sign-in code" hint="The 8 numbers from the email we just sent.">
             <input
               id={codeId}
               name="code"
@@ -56,7 +56,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
               required
               autoFocus
               aria-describedby={describedBy(codeId, true, false)}
-              className={`${inputClass} max-w-[240px] text-center font-mono text-[26px] tracking-[0.3em]`}
+              className={`${inputClass} max-w-[300px] text-center font-mono text-[26px] tracking-[0.25em]`}
             />
           </Field>
           <div>
