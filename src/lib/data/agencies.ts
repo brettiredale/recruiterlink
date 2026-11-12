@@ -147,6 +147,9 @@ export async function listFeaturedAgencies(
     .from("agencies")
     .select(AGENCY_SUMMARY_COLUMNS)
     .eq("status", "published")
+    // Listings with no city are incomplete (mostly old self-registered test
+    // entries) and must never be showcased.
+    .not("city_id", "is", null)
     .or("is_premium.eq.true,logo_path.not.is.null");
   if (countryId !== null) query = query.eq("country_id", countryId);
   const rows = unwrapRows(
