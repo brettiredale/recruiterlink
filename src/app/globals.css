@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * RecruiterLink design tokens. Light theme only.
+ * Palette taken from the approved designs (concept 5 home page, Madrid city page).
+ */
+@theme {
+  /* Brand colours */
+  --color-navy: #21174b;
+  --color-pink: #ff3eb5;
+  --color-pink-hover: #f0249f;
+  /* Small pink text on white, cream or pink tint. Never use plain pink for small text. */
+  --color-pink-text: #c4127f;
+  /* Pink for small labels on navy. */
+  --color-pink-soft: #ffaeee;
+  --color-indigo: #4c57e6;
+  /* Small indigo text on tinted (non-white) backgrounds, and link hover. */
+  --color-indigo-deep: #3a44c9;
+  --color-lavender: #eaebfb;
+  --color-pale: #f6f7fe;
+  --color-cream: #fff7d9;
+  --color-pink-tint: #ffe2f4;
+
+  /* Text */
+  --color-muted: #4b436d;
+  --color-on-navy: #edeeff;
+  --color-on-navy-muted: #cdcbd5;
+
+  /* Borders, lightest to strongest */
+  --color-line: #e0e1f5;
+  --color-line-mid: #d5d6f2;
+  --color-line-strong: #c9cbef;
+  --color-line-control: #cdcbd5;
+
+  /* Radii */
+  --radius-btn-sm: 8px;
+  --radius-btn: 10px;
+  --radius-chip: 14px;
+  --radius-logo: 16px;
+  --radius-tile: 18px;
+  --radius-card: 22px;
+  --radius-logo-lg: 24px;
+  --radius-feature: 28px;
+  --radius-panel: 30px;
+
+  /* Shadows */
+  --shadow-logo: 0 6px 18px rgba(33, 23, 75, 0.14);
+  --shadow-search: 0 20px 50px rgba(33, 23, 75, 0.16);
+  --shadow-card: 0 14px 34px rgba(33, 23, 75, 0.12);
+  --shadow-menu: 0 24px 48px rgba(33, 23, 75, 0.18);
+
+  /* Page width used by every section */
+  --container-page: 1210px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter), Helvetica, Arial, sans-serif;
+  --font-heading: var(--font-jakarta), var(--font-inter), Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "Courier New", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: #ffffff;
+    color: var(--color-navy);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  /* One visible focus style everywhere. Dark sections set --focus-ring. */
+  :focus-visible {
+    outline: 3px solid var(--focus-ring, var(--color-indigo));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-pink-tint);
+    color: var(--color-navy);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+/* Focus ring colour for navy, indigo and photo backgrounds. */
+@utility on-dark {
+  --focus-ring: #ffffff;
+}
+
+/* Small uppercase Space Mono label used above headings and on badges. */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
 }

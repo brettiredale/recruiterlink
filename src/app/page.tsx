@@ -9,7 +9,7 @@ export default function Home() {
       <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
         {siteName}
       </h1>
-      <p className="mt-4 max-w-md text-lg text-zinc-600 dark:text-zinc-400">
+      <p className="mt-4 max-w-md text-lg text-zinc-600">
         {siteDescription}
       </p>
     </main>

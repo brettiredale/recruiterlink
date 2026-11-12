@@ -12,6 +12,18 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  images: {
+    // Agency logos live in our own Supabase storage bucket (public read).
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ipfjjrngsjixgbmkezzg.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/agency-logos/**",
+        search: "",
+      },
+    ],
+  },
   async headers() {
     if (isIndexable) return [];
 
