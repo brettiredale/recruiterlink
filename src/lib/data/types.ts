@@ -71,6 +71,9 @@ export type AgencyDetail = AgencySummary & {
   description: string | null;
   website: string | null;
   domain: string | null;
+  /** Name as used for ordering lists (lowercase, no leading "The"). */
+  sortName: string;
+  cityId: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -89,4 +92,11 @@ export type DirectoryTotals = {
   countryCount: number;
   cityCount: number;
   specialismCount: number;
+};
+
+/** A city + specialism pair with its number of published agencies. */
+export type CitySpecialismCount = {
+  cityId: number;
+  specialism: Specialism;
+  agencyCount: number;
 };

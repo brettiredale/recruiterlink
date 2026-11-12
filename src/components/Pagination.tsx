@@ -1,30 +1,20 @@
 import Link from "next/link";
 import { cx } from "./cx";
+import { pagedPath } from "@/lib/routes";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
 export type PaginationProps = {
   /** Page being shown, starting at 1. */
   currentPage: number;
   totalPages: number;
-  /**
-   * Address of page 1, e.g. "/spain/madrid". Later pages add `?page=N`
-   * (or `&page=N` when the address already has a query).
-   */
+  /** Address of page 1, e.g. "/spain/madrid". Later pages add `/page/N`. */
   basePath: string;
-  /** Name of the page number in the address. */
-  pageParam?: string;
   /** Optional line above the links, e.g. "Showing 13 to 24 of 73 agencies". */
   summary?: string;
   /** What is being paged, for screen readers, e.g. "Agencies in Madrid". */
   label?: string;
   className?: string;
 };
-
-/** Address for a page number. Page 1 is always the bare address. */
-export function pageHref(basePath: string, page: number, pageParam = "page") {
-  if (page <= 1) return basePath;
-  return `${basePath}${basePath.includes("?") ? "&" : "?"}${pageParam}=${page}`;
-}
 
 /** Page numbers to show: first, last, and those around the current page. */
 export function pageWindow(current: number, total: number): Array<number | "gap"> {
@@ -54,7 +44,6 @@ export function Pagination({
   currentPage,
   totalPages,
   basePath,
-  pageParam = "page",
   summary,
   label = "Pages",
   className,
@@ -66,7 +55,7 @@ export function Pagination({
   }
 
   const current = Math.min(Math.max(1, currentPage), totalPages);
-  const href = (page: number) => pageHref(basePath, page, pageParam);
+  const href = (page: number) => pagedPath(basePath, page);
 
   return (
     <nav aria-label={label} className={cx("flex flex-col items-center gap-4", className)}>

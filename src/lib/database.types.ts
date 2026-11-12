@@ -239,6 +239,42 @@ export type Database = {
         }
         Relationships: []
       }
+      listing_requests: {
+        Row: {
+          agency_name: string | null
+          created_at: string
+          email: string
+          id: string
+          kind: string
+          message: string | null
+          name: string
+          source_path: string | null
+          website: string | null
+        }
+        Insert: {
+          agency_name?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          kind: string
+          message?: string | null
+          name: string
+          source_path?: string | null
+          website?: string | null
+        }
+        Update: {
+          agency_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          kind?: string
+          message?: string | null
+          name?: string
+          source_path?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       slug_redirects: {
         Row: {
           agency_id: string

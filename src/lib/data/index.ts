@@ -13,12 +13,19 @@ export {
   listCitiesForCountry,
   listIndexableCities,
   getCityBySlugs,
+  listTopCities,
+  findCitiesBySlug,
+  getCitiesByIds,
 } from "./cities";
 export {
   listSpecialisms,
   getSpecialismBySlug,
   listSpecialismsForCity,
   listSpecialismsForCountry,
+  listCountryCountsForSpecialism,
+  listTopCityCountsForSpecialism,
+  listTopCitySpecialismPairs,
+  listCitySpecialismPairs,
 } from "./specialisms";
 export {
   listAgenciesForCity,
@@ -26,6 +33,8 @@ export {
   getAgencyBySlug,
   resolveLegacySlug,
   listFeaturedAgencies,
+  listRelatedAgencies,
+  listAgencySitemapEntries,
   searchAgencies,
 } from "./agencies";
 export { getDirectoryTotals } from "./totals";

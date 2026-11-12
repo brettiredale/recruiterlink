@@ -104,3 +104,53 @@ export async function getCityBySlugs(
   );
   return row ? toCity(row) : null;
 }
+
+/** The cities with most published agencies worldwide, largest first. */
+export async function listTopCities(limit = 12): Promise<CityWithStats[]> {
+  const rows = unwrapRows(
+    await getSupabaseServerClient()
+      .from("city_stats")
+      .select(COLUMNS)
+      .gt("agency_count", 0)
+      .order("agency_count", { ascending: false })
+      .order("name")
+      .limit(Math.min(Math.max(Math.trunc(limit) || 12, 1), 200)),
+    "top cities",
+  );
+  return rows.map(toCity);
+}
+
+/**
+ * Cities with this slug that have at least one agency, largest first.
+ * Several countries can have a city of the same name; pass `countrySlug`
+ * to look in one country only.
+ */
+export async function findCitiesBySlug(
+  citySlug: string,
+  countrySlug?: string,
+): Promise<CityWithStats[]> {
+  let query = getSupabaseServerClient()
+    .from("city_stats")
+    .select(COLUMNS)
+    .eq("slug", citySlug)
+    .gt("agency_count", 0);
+  if (countrySlug) query = query.eq("country_slug", countrySlug);
+  const rows = unwrapRows(
+    await query.order("agency_count", { ascending: false }).order("country_slug").limit(20),
+    "cities by name",
+  );
+  return rows.map(toCity);
+}
+
+/** Cities by id, with their live stats (in no particular order). */
+export async function getCitiesByIds(cityIds: number[]): Promise<CityWithStats[]> {
+  if (cityIds.length === 0) return [];
+  const rows = unwrapRows(
+    await getSupabaseServerClient()
+      .from("city_stats")
+      .select(COLUMNS)
+      .in("city_id", cityIds.slice(0, 500)),
+    "cities",
+  );
+  return rows.map(toCity);
+}

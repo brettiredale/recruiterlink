@@ -54,7 +54,10 @@ async function listAgencies(
     .order("id")
     .range(from, to)
     .overrideTypes<AgencySummaryRow[], { merge: false }>();
-  const rows = unwrapRows(result, what);
+  // Asking for a page past the end is answered with an error by the API;
+  // for a list that simply means "no rows on that page".
+  const pastTheEnd = result.error?.code === "PGRST103";
+  const rows = pastTheEnd ? [] : unwrapRows(result, what);
   const total = result.count ?? 0;
 
   return {
@@ -131,20 +134,24 @@ export async function resolveLegacySlug(
 }
 
 /**
- * Agencies to feature for a country: premium first, then claimed, then
- * those with both a logo and a description. Order within a group is fixed
- * but arbitrary, so the same agencies show for every visitor.
+ * Agencies to feature, for one country or (with `null`) worldwide: premium
+ * listings first, then the best-scoring agencies that have a logo (claimed
+ * ones, then those with a description). Order within a group is fixed but
+ * arbitrary, so the same agencies show for every visitor.
  */
 export async function listFeaturedAgencies(
-  countryId: number,
+  countryId: number | null,
   limit = 12,
 ): Promise<AgencySummary[]> {
+  let query = getSupabaseServerClient()
+    .from("agencies")
+    .select(AGENCY_SUMMARY_COLUMNS)
+    .eq("status", "published")
+    .or("is_premium.eq.true,logo_path.not.is.null");
+  if (countryId !== null) query = query.eq("country_id", countryId);
   const rows = unwrapRows(
-    await getSupabaseServerClient()
-      .from("agencies")
-      .select(AGENCY_SUMMARY_COLUMNS)
-      .eq("country_id", countryId)
-      .eq("status", "published")
+    await query
+      .order("is_premium", { ascending: false })
       .order("quality_score", { ascending: false })
       .order("id")
       .limit(Math.min(Math.max(Math.trunc(limit) || 12, 1), 100))
@@ -152,6 +159,74 @@ export async function listFeaturedAgencies(
     "featured agencies",
   );
   return rows.map(toAgencySummary);
+}
+
+/**
+ * Other agencies in the same city, for an agency's page: the ones that
+ * follow it in name order, wrapping round to the start of the list. Every
+ * agency therefore links to different neighbours, rather than all of a
+ * city's pages linking to the same few.
+ */
+export async function listRelatedAgencies(
+  agency: { id: string; sortName: string; cityId: number },
+  limit = 6,
+): Promise<AgencySummary[]> {
+  const base = () =>
+    getSupabaseServerClient()
+      .from("agencies")
+      .select(AGENCY_SUMMARY_COLUMNS)
+      .eq("city_id", agency.cityId)
+      .eq("status", "published")
+      .neq("id", agency.id)
+      .order("sort_name")
+      .order("id")
+      .limit(limit);
+
+  const after = unwrapRows(
+    await base()
+      .gt("sort_name", agency.sortName)
+      .overrideTypes<AgencySummaryRow[], { merge: false }>(),
+    "related agencies",
+  );
+  if (after.length >= limit) return after.map(toAgencySummary);
+
+  const fromStart = unwrapRows(
+    await base()
+      .lte("sort_name", agency.sortName)
+      .overrideTypes<AgencySummaryRow[], { merge: false }>(),
+    "related agencies",
+  );
+  const seen = new Set(after.map((row) => row.id));
+  return [...after, ...fromStart.filter((row) => !seen.has(row.id))]
+    .slice(0, limit)
+    .map(toAgencySummary);
+}
+
+/**
+ * Slug and last-changed time of published agencies, in a fixed order, for
+ * the sitemaps. `from` and `to` are row positions (inclusive), read 1,000
+ * at a time because that is the most the API returns per request.
+ */
+export async function listAgencySitemapEntries(
+  from: number,
+  to: number,
+): Promise<{ slug: string; updatedAt: string }[]> {
+  const starts: number[] = [];
+  for (let start = from; start <= to; start += 1000) starts.push(start);
+  const batches = await Promise.all(
+    starts.map(async (start) =>
+      unwrapRows(
+        await getSupabaseServerClient()
+          .from("agencies")
+          .select("slug, updated_at")
+          .eq("status", "published")
+          .order("id")
+          .range(start, Math.min(start + 999, to)),
+        "agencies for the sitemap",
+      ),
+    ),
+  );
+  return batches.flat().map((row) => ({ slug: row.slug, updatedAt: row.updated_at }));
 }
 
 type SearchOptions = {

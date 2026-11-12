@@ -10,7 +10,6 @@ export type NavItem = { label: string; href: string };
 export type MobileMenuProps = {
   items: NavItem[];
   listAgency: NavItem;
-  logIn: NavItem;
 };
 
 /**
@@ -18,7 +17,7 @@ export type MobileMenuProps = {
  * page's script has loaded. Closes on Escape, on choosing a link, on a tap
  * outside, and when the window grows to desktop width.
  */
-export function MobileMenu({ items, listAgency, logIn }: MobileMenuProps) {
+export function MobileMenu({ items, listAgency }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const summaryRef = useRef<HTMLElement>(null);
@@ -90,13 +89,6 @@ export function MobileMenu({ items, listAgency, logIn }: MobileMenuProps) {
               className={buttonClasses("primary-small", "sm:flex-1")}
             >
               {listAgency.label}
-            </Link>
-            <Link
-              href={logIn.href}
-              onClick={close}
-              className={buttonClasses("outline", "sm:flex-1")}
-            >
-              {logIn.label}
             </Link>
           </div>
         </nav>

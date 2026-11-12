@@ -46,7 +46,7 @@ export const AGENCY_SUMMARY_COLUMNS = `
 
 export const AGENCY_DETAIL_COLUMNS = `
   ${AGENCY_SUMMARY_COLUMNS},
-  description, website, domain, created_at, updated_at
+  description, website, domain, sort_name, city_id, created_at, updated_at
 ` as const;
 
 type Place = { name: string; slug: string };
@@ -70,6 +70,8 @@ export type AgencyDetailRow = AgencySummaryRow & {
   description: string | null;
   website: string | null;
   domain: string | null;
+  sort_name: string;
+  city_id: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -98,6 +100,8 @@ export function toAgencyDetail(row: AgencyDetailRow): AgencyDetail {
     description: row.description,
     website: row.website,
     domain: row.domain,
+    sortName: row.sort_name,
+    cityId: row.city_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

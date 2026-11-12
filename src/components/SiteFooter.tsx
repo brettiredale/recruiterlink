@@ -10,17 +10,16 @@ export const defaultFooterColumns: FooterColumn[] = [
     title: "Directory",
     links: [
       { label: "Find agencies", href: "/search" },
-      { label: "Cities", href: "/cities" },
-      { label: "Specialisms", href: "/specialisms" },
       { label: "Countries", href: "/countries" },
+      { label: "Specialisms", href: "/specialisms" },
     ],
   },
   {
     title: "For agencies",
     links: [
-      { label: "List your agency", href: "/list-your-agency" },
-      { label: "Premium", href: "/for-agencies" },
-      { label: "Log in", href: "/login" },
+      { label: "List your agency", href: "/for-agencies" },
+      { label: "Premium", href: "/for-agencies#pricing" },
+      { label: "Claim your listing", href: "/for-agencies#register" },
     ],
   },
   {

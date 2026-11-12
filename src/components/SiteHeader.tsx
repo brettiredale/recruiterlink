@@ -8,9 +8,8 @@ export type { NavItem };
 
 export const defaultNavItems: NavItem[] = [
   { label: "Find agencies", href: "/search" },
-  { label: "Cities", href: "/cities" },
-  { label: "Specialisms", href: "/specialisms" },
   { label: "Countries", href: "/countries" },
+  { label: "Specialisms", href: "/specialisms" },
   { label: "For agencies", href: "/for-agencies" },
 ];
 
@@ -19,17 +18,17 @@ export type SiteHeaderProps = {
   navItems?: NavItem[];
   /** The pink "List your agency" button. */
   listAgency?: NavItem;
-  /** The outlined "Log in" button. */
-  logIn?: NavItem;
   /** Where the logo links to. */
   homeHref?: string;
 };
 
-/** Site header: wordmark, main navigation, "List your agency" and "Log in". */
+/**
+ * Site header: wordmark, main navigation and "List your agency". There is
+ * no "Log in" until agency logins exist.
+ */
 export function SiteHeader({
   navItems = defaultNavItems,
-  listAgency = { label: "List your agency", href: "/list-your-agency" },
-  logIn = { label: "Log in", href: "/login" },
+  listAgency = { label: "List your agency", href: "/for-agencies" },
   homeHref = "/",
 }: SiteHeaderProps) {
   return (
@@ -74,12 +73,7 @@ export function SiteHeader({
               {listAgency.label}
             </ButtonLink>
           </div>
-          <div className="hidden min-[1120px]:block">
-            <ButtonLink href={logIn.href} variant="outline" className="whitespace-nowrap">
-              {logIn.label}
-            </ButtonLink>
-          </div>
-          <MobileMenu items={navItems} listAgency={listAgency} logIn={logIn} />
+          <MobileMenu items={navItems} listAgency={listAgency} />
         </div>
       </Container>
     </header>

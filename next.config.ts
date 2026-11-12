@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { legacyRedirects } from "./src/lib/legacy-redirects";
 import { isIndexable } from "./src/lib/site";
 
 const nextConfig: NextConfig = {
@@ -13,7 +14,8 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    // Agency logos live in our own Supabase storage bucket (public read).
+    // Agency logos and city photos live in our own Supabase storage
+    // buckets (public read).
     remotePatterns: [
       {
         protocol: "https",
@@ -22,7 +24,28 @@ const nextConfig: NextConfig = {
         pathname: "/storage/v1/object/public/agency-logos/**",
         search: "",
       },
+      {
+        protocol: "https",
+        hostname: "ipfjjrngsjixgbmkezzg.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/city-photos/**",
+        search: "",
+      },
     ],
+  },
+  async redirects() {
+    return [
+      // One address per page: the "www" form moves to the bare domain,
+      // the form the old site's canonical links and sitemaps used.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.recruiterlink.com" }],
+        destination: "https://recruiterlink.com/:path*",
+        permanent: true,
+      },
+      // Every address the old site exposed (see src/lib/legacy-redirects.ts).
+      ...legacyRedirects,
+    ];
   },
   async headers() {
     if (isIndexable) return [];

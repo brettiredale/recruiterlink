@@ -1,6 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, Space_Mono } from "next/font/google";
-import { isIndexable, siteDescription, siteName } from "@/lib/site";
+import { cacheLife } from "next/cache";
+import { SiteFooter, SiteHeader } from "@/components";
+import { robotsRule } from "@/lib/indexability";
+import { isIndexable, siteDescription, siteName, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 // Body text.
@@ -26,13 +29,32 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: `${siteName} | ${siteDescription}`,
     template: `%s | ${siteName}`,
   },
   description: siteDescription,
-  robots: { index: isIndexable, follow: isIndexable },
+  applicationName: siteName,
+  // Pages set their own rule; this is the fallback (and covers error pages).
+  robots: robotsRule(true, isIndexable),
+  openGraph: { type: "website", siteName, locale: "en" },
+  twitter: { card: "summary_large_image" },
+  formatDetection: { telephone: false },
 };
+
+export const viewport: Viewport = {
+  themeColor: "#21174B",
+  width: "device-width",
+  initialScale: 1,
+};
+
+/** The footer with the current year, refreshed daily rather than per visit. */
+async function Footer() {
+  "use cache";
+  cacheLife("days");
+  return <SiteFooter year={new Date().getFullYear()} />;
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -40,7 +62,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${inter.variable} ${jakarta.variable} ${spaceMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <SiteHeader />
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+        <Footer />
+      </body>
     </html>
   );
 }
