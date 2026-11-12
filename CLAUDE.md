@@ -245,3 +245,10 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 - 75 photos were made with FLUX 3 and 25 with nano-banana-pro. Auckland was cropped to remove a wrong bridge; Allentown and Montreal are weak and worth regenerating. Small-town images are plausible for the region, not verified views.
 - Edge function `upload-city-photo` is a retired one-off (answers 410). Its working source is kept at `supabase/functions/upload-city-photo/working-source.reference.ts.txt` for the continuation, which needs a fresh one-time token. Scripts and the remaining job list were in the session scratchpad (`cityphotos/`) and do not survive the session.
 - United States cities have no state in the data, so same-named towns (Arlington, Rochester, Aurora, Columbia, Wilmington, Glendale, Wayne) are guesses when generating.
+
+## Launch (owner's go-ahead given 12 Nov 2026)
+
+- The owner reviewed the site and asked for it to go live on recruiterlink.com and for the remaining city photos to be finished (once they top up fal.ai).
+- Claude cannot change Vercel settings (the connector refuses), so the owner does three things in Vercel: add `SITE_INDEXABLE=true` (Production only) to project `recruiterlink`, redeploy, then move `recruiterlink.com` and `www.recruiterlink.com` from project `recruiterlink2` to `recruiterlink`. After that, confirm with `/api/health`, `/robots.txt` (must allow and name the sitemap) and a legacy agency address on the real domain.
+- Once live, the "from launch day" rule applies: changes go to a preview and wait for the owner's approval.
+- Still owed after launch: delete 3 test rows in `public.listing_requests` (email `claude-form-test@example.com`; needs the owner's OK), a notification when the form is used, a separate test database, payments, logins, the bot connector, the AI part of search, and the Firecrawl content refresh the owner asked about.
