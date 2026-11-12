@@ -14,6 +14,12 @@ external bot through a connector.
 - Database: Supabase project `RecruiterLink`, ref `ipfjjrngsjixgbmkezzg`,
   London (eu-west-2), organisation LOVELIO. Live database only; a separate
   test database is to be added before launch.
+- Old data: schema `legacy` in the database holds an untouched, private copy
+  of the old site's agency table (`legacy.recruitment_agencies`, 25,640 rows,
+  loaded and verified 12 Nov 2026). Build the clean public tables from it
+  with migrations. Never expose it through the API or edit it in place.
+- Migrations: `supabase/migrations/`, one file per migration applied to the
+  database, named `<version>_<name>.sql` to match Supabase's own record.
 - Old site: repository `brettiredale/RecruiterLink-Live`, Vercel project
   `recruiterlink2`, which currently serves recruiterlink.com. Reference only.
   Do not change it, and do not copy its code across.
