@@ -236,3 +236,12 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 - Structured data: Organization + WebSite (home), BreadcrumbList (inner
   pages), ItemList (lists), EmploymentAgency (agency pages), FAQPage. Only
   database facts; no ratings, reviews, founding years or staff numbers.
+
+## City photos (status 12 Nov 2026)
+
+- Storage bucket `city-photos` (public read, JPEG/WebP, 1.5 MB limit, no public write or list) holds AI-generated photos named `<city id>.jpg` (1600x900), recorded in `cities.photo_path`.
+- 100 of the 267 cities with ten or more agencies have one (the 99 largest plus Allentown). The other 167 are waiting: the owner's fal.ai balance ($25) ran out. Do not generate more without the owner topping up AND agreeing a budget.
+- Cost lesson: the whole $25 went on roughly 195 requests (about 13 cents each), far above the 3 to 5 cents estimated beforehand. In a Claude cloud session the proxy cuts fal.ai requests at 30 seconds, which lost a third to a half of FLUX 3 requests, and failed requests appear to be billed. `fal-ai/nano-banana-pro` answers in about 20 seconds with no failures and more accurate landmarks: use it for the rest, at "1K", one request per city, and measure real cost on the first 10 before continuing.
+- 75 photos were made with FLUX 3 and 25 with nano-banana-pro. Auckland was cropped to remove a wrong bridge; Allentown and Montreal are weak and worth regenerating. Small-town images are plausible for the region, not verified views.
+- Edge function `upload-city-photo` is a retired one-off (answers 410). Its working source is kept at `supabase/functions/upload-city-photo/working-source.reference.ts.txt` for the continuation, which needs a fresh one-time token. Scripts and the remaining job list were in the session scratchpad (`cityphotos/`) and do not survive the session.
+- United States cities have no state in the data, so same-named towns (Arlington, Rochester, Aurora, Columbia, Wilmington, Glendale, Wayne) are guesses when generating.

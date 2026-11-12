@@ -1,0 +1,103 @@
+// REFERENCE ONLY: the working source of the one-off `upload-city-photo` job
+// (12 Nov 2026). It is NOT deployed; the deployed function is the retired stub
+// in index.ts. Kept so the job can be understood or repeated. To reuse it,
+// generate a new random token, put its SHA-256 hash in TOKEN_SHA256, deploy
+// with verify_jwt on, and retire it again afterwards.
+//
+// What it did: accepted { cityId, imageBase64 } from a caller holding both the
+// site's public key and a one-time secret token, checked the bytes really were
+// a JPEG under the size limit and that the city exists, stored the file as
+// city-photos/<city id>.jpg and recorded it in public.cities.photo_path.
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const TOKEN_SHA256 =
+  "f370c7f243906a0e470dc07555ca43c071a2b34d4d176f4530586a45f28b9e09";
+const BUCKET = "city-photos";
+const MAX_BYTES = 1572864; // 1.5 MB, same as the bucket limit
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function sameString(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+function fail(status: number, error: string): Response {
+  return Response.json({ error }, { status });
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== "POST") return fail(405, "POST only");
+
+  const token = req.headers.get("x-job-token") ?? "";
+  if (!token || !sameString(await sha256Hex(token), TOKEN_SHA256)) {
+    return fail(401, "bad job token");
+  }
+
+  let body: { cityId?: unknown; imageBase64?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return fail(400, "body must be JSON");
+  }
+  const cityId = body.cityId;
+  if (typeof cityId !== "number" || !Number.isInteger(cityId) || cityId <= 0) {
+    return fail(400, "cityId must be a positive whole number");
+  }
+  if (typeof body.imageBase64 !== "string" || body.imageBase64.length === 0) {
+    return fail(400, "imageBase64 is required");
+  }
+  if (body.imageBase64.length > Math.ceil(MAX_BYTES / 3) * 4 + 4) {
+    return fail(413, "image too large");
+  }
+
+  let bytes: Uint8Array;
+  try {
+    const raw = atob(body.imageBase64);
+    bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  } catch {
+    return fail(400, "imageBase64 is not valid base64");
+  }
+  if (bytes.length > MAX_BYTES) return fail(413, "image too large");
+  const n = bytes.length;
+  const isJpeg = n > 1024 && bytes[0] === 0xff && bytes[1] === 0xd8 &&
+    bytes[2] === 0xff && bytes[n - 2] === 0xff && bytes[n - 1] === 0xd9;
+  if (!isJpeg) return fail(415, "not a JPEG image");
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+
+  const { data: city, error: cityError } = await supabase
+    .from("cities").select("id").eq("id", cityId).maybeSingle();
+  if (cityError) return fail(500, "city lookup failed: " + cityError.message);
+  if (!city) return fail(404, "no such city");
+
+  const path = `${cityId}.jpg`;
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(
+    path,
+    bytes,
+    { contentType: "image/jpeg", cacheControl: "31536000", upsert: true },
+  );
+  if (uploadError) return fail(500, "upload failed: " + uploadError.message);
+
+  const { error: updateError } = await supabase
+    .from("cities").update({ photo_path: path }).eq("id", cityId);
+  if (updateError) return fail(500, "update failed: " + updateError.message);
+
+  return Response.json({ ok: true, cityId, path, bytes: n });
+});
