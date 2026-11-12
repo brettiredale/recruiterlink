@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { sendRequestNotification } from "./notify";
 import {
   validateRequest,
   type RequestErrors,
@@ -84,6 +85,17 @@ export async function submitRequest(
       message: "Sorry, we could not record your request. Please try again in a few minutes.",
     };
   }
+
+  // Stored safely; now tell the owner. A failed email never fails the request.
+  await sendRequestNotification({
+    kind: request.kind,
+    name: request.name,
+    email: request.email,
+    agencyName: request.agencyName,
+    website: request.website,
+    message: request.message,
+    sourcePath: source,
+  });
 
   return { status: "sent", email: request.email };
 }
