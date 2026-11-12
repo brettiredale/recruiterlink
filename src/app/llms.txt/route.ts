@@ -61,7 +61,7 @@ ${withoutGeneric(specialisms)
 ## For recruitment agencies
 
 - A listing is free: a card in the directory and a detailed agency page.
-- A Premium listing costs $49 USD a month or $490 USD a year and adds images, video, team and leadership profiles and customer testimonials.
+- A Premium listing costs $49 USD a month or $499 USD a year and adds images, video, team and leadership profiles and customer testimonials.
 - Details: ${siteUrl}/for-agencies
 
 ## Machine-readable data

@@ -71,7 +71,7 @@ external bot through a connector.
   headline: "Find the perfect recruitment agency for your next hire or job
   search".
 - Home leads with an AI text and voice search, then many featured agencies.
-- Premium listing price: $49 USD a month or $490 USD a year. Free listing is
+- Premium listing price: $49 USD a month or $499 USD a year. Free listing is
   a card plus a detailed page. Premium adds images, video, team and
   leadership profiles, customer testimonials.
 
@@ -256,3 +256,4 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 - Form notifications (owner's instruction, 12 Nov 2026): every agency sign-up and contact request is stored in `public.listing_requests` and then emailed to `brett@recruiterlink.com` and `brettiredale@gmail.com` through Resend (`src/features/requests/notify.ts`, sender `notifications@recruiterlink.com`, domain verified in Resend). It needs `RESEND_API_KEY` in Vercel (the owner adds it; Claude cannot). Without the key the request is still stored and a warning is logged. DNS for recruiterlink.com is at Namecheap BasicDNS (moved off Cloudflare 12 Nov 2026); the mailbox runs on MXroute.
 - LAUNCHED 12 Nov 2026: recruiterlink.com now serves this project (domain moved in Vercel by the owner, `www` redirects to the bare domain, `SITE_INDEXABLE=true` on Production). Verified on the real domain: robots.txt allows crawling and names the sitemap, `/api/health` is ok, an old `/agencies/recruitment-...` address lands on the new agency page with `index, follow` and the right canonical. From now on the "from launch day" rule is in force: code changes go to a branch and its Vercel preview and wait for the owner's approval before reaching `main`. Notes-only changes to this file are the one exception.
 - Branded emails (owner approved 12 Nov 2026, live): every system email is built by `renderEmail` in `src/features/requests/email-template.ts` (tables, inline styles, Arial, no images, a plain-text copy alongside; header is the wordmark as text, "Recruiter" white and "Link" in the logo pink `#EE1E80` on navy). Use it for every future email. Each form now sends two emails: the notification to the owner's two addresses, and a confirmation to the person who filled in the form (replies go to `brett@recruiterlink.com`).
+- Stripe (account Magic Hire Technologies, live): product `prod_VcGWJLqazg5MzC` "RecruiterLink Premium" with prices `price_1Ub1zeAuVFaJ0APtBChvitAJ` ($49 a month) and `price_1Ub22WAuVFaJ0APtUHkJeyrU` ($499 a year), created by the owner 12 Nov 2026. The yearly price is $499 (owner changed it from $490). Claude can read Stripe through the session's key but must not create or change anything there; the owner does that by hand. Payments are not built yet.

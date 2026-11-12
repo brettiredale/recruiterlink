@@ -45,7 +45,7 @@ export function homeFaqs(totals: { agencyCount: number; countryCount: number }):
     {
       question: "How much does it cost to list a recruitment agency?",
       answer:
-        "A standard listing is free. A Premium listing costs $49 USD a month or $490 USD a year, and adds images, video, team and leadership profiles and customer testimonials.",
+        "A standard listing is free. A Premium listing costs $49 USD a month or $499 USD a year, and adds images, video, team and leadership profiles and customer testimonials.",
     },
   ];
 }

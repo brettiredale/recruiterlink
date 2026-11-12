@@ -3,7 +3,7 @@ import { cx } from "./cx";
 import { CheckIcon } from "./icons";
 
 export const PREMIUM_MONTHLY_USD = 49;
-export const PREMIUM_YEARLY_USD = 490;
+export const PREMIUM_YEARLY_USD = 499;
 
 export const freeFeatures = ["Your agency's card in the directory", "A detailed agency page"];
 export const premiumFeatures = [

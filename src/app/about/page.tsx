@@ -102,7 +102,7 @@ export default async function AboutPage() {
           </h2>
           <p>
             A listing is free. A Premium listing adds images, video, team and leadership
-            profiles and customer testimonials for $49 USD a month or $490 USD a year.
+            profiles and customer testimonials for $49 USD a month or $499 USD a year.
           </p>
           <p>
             <ButtonLink href={forAgenciesPath} variant="navy">

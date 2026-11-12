@@ -75,5 +75,5 @@ test("city + specialism answers", () => {
 test("home answers quote the live totals and the agreed prices", () => {
   const faqs = homeFaqs({ agencyCount: 25497, countryCount: 31 });
   assert.match(faqs[0].answer, /25,497 agencies in 31 countries/);
-  assert.match(faqs[3].answer, /\$49 USD a month or \$490 USD a year/);
+  assert.match(faqs[3].answer, /\$49 USD a month or \$499 USD a year/);
 });
