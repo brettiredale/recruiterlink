@@ -48,6 +48,12 @@ external bot through a connector.
 
 ## Rules
 
+- Supabase and Vercel tools are pre-approved in `.claude/settings.json` so
+  the owner is not asked each time. That approval cannot be limited to one
+  project, and the same account holds the owner's other live businesses.
+  Only ever use these tools on Supabase project `ipfjjrngsjixgbmkezzg` and
+  Vercel project `recruiterlink`. Never run them against any other project
+  without the owner asking for it by name.
 - Never commit keys, `.env` files or data exports. Agency and job seeker
   data contains personal details.
 - Search engines stay blocked until launch. The switch is `SITE_INDEXABLE`
