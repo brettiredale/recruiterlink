@@ -55,6 +55,40 @@ external bot through a connector.
   scraped testimonials (not republished).
 - Old web addresses (`/agencies/<slug>`) must redirect to their new pages.
 
+## Design direction (in progress, owner choosing)
+
+- Design canvas with all concepts: https://claude.ai/artifact/Sq6WkJvqxw5ygdNzzTZQWC
+  (private to the owner). The owner chose concept 5 as the direction; a
+  revised home page and a city page (Madrid) are on that canvas.
+- Palette, taken from mention-me.com at the owner's request: navy `#21174B`,
+  hot pink `#FF3EB5`, indigo `#4C57E6`, lavender `#EAEBFB`, pale `#F6F7FE`,
+  cream `#FFF7D9`, pink tint `#FFE2F4`. Small text never sits white-on-pink
+  or pink-on-white (too faint); use navy on pink, or `#C4127F` for small
+  pink text.
+- Heading font is still being chosen (Plus Jakarta Sans is the working
+  default; the owner rejected Bricolage Grotesque). Body font Inter, small
+  capital labels Space Mono.
+- No "I am hiring / I am job hunting" switch: the owner removed it. Home
+  headline: "Find the perfect recruitment agency for your next hire or job
+  search".
+- Home leads with an AI text and voice search, then many featured agencies.
+- Premium listing price: $49 USD a month or $490 USD a year. Free listing is
+  a card plus a detailed page. Premium adds images, video, team and
+  leadership profiles, customer testimonials.
+
+## Search engine structure (agreed approach)
+
+- Every country, city and city-plus-specialism gets its own fixed address
+  with the same content for every visitor. These are the pages that rank.
+- The home page may show the visitor's country first (from their IP), but
+  only as a personalised section on a page whose core is the same for
+  everyone. Never redirect by IP: search engine crawlers mostly visit from
+  the US and would never see the other countries.
+- Every city with an agency gets a page (owner's requirement), with a city
+  photo, all its agencies and a specialism filter. 1,786 of 3,191 cities
+  have only one agency, so which cities are submitted to search engines is
+  an open decision (thin pages can hurt the whole site).
+
 ## Rules
 
 - Supabase and Vercel tools are pre-approved in `.claude/settings.json` so
