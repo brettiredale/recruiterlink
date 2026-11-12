@@ -19,7 +19,8 @@ export const defaultFooterColumns: FooterColumn[] = [
     links: [
       { label: "List your agency", href: "/for-agencies" },
       { label: "Premium", href: "/for-agencies#pricing" },
-      { label: "Claim your listing", href: "/for-agencies#register" },
+      { label: "Claim your listing", href: "/account/sign-in" },
+      { label: "Agency sign in", href: "/account" },
     ],
   },
   {

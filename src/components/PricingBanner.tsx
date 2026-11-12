@@ -56,7 +56,7 @@ export function PricingBanner({
   heading,
   body,
   premiumHref = "/for-agencies#register",
-  freeHref = "/for-agencies#register",
+  freeHref = "/account/sign-in",
   ctaLabel = "List your agency",
   headingLevel: Heading = "h2",
   className,

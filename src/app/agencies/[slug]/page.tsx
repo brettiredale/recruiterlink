@@ -24,7 +24,7 @@ import {
   citySpecialismPath,
   countryPath,
   isValidSlug,
-  registerInterestPath,
+  signInPath,
   specialismPath,
 } from "@/lib/routes";
 import { agencyJsonLd, notFoundMetadata, pageMetadata } from "@/lib/seo";
@@ -235,11 +235,11 @@ export default async function AgencyPage({ params }: Props) {
               Is this your agency?
             </h2>
             <p className="mb-5 text-base text-muted">
-              Claim this listing to keep its details up to date. Listings are
-              free; Premium adds images, video, team and leadership profiles
-              and customer testimonials.
+              Sign in with your work email address to manage this listing:
+              update its description, specialisms and logo. It is free and
+              takes a couple of minutes.
             </p>
-            <Link href={registerInterestPath} className={buttonClasses("primary-small", "w-full")}>
+            <Link href={signInPath} prefetch={false} className={buttonClasses("primary-small", "w-full")}>
               Claim this listing
             </Link>
           </aside>

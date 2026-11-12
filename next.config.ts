@@ -5,6 +5,10 @@ import { isIndexable } from "./src/lib/site";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Logo uploads: files up to 1 MB, plus room for the form around them.
+    serverActions: { bodySizeLimit: "2mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {

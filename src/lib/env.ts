@@ -26,3 +26,16 @@ export function getSupabaseConfig() {
     ),
   };
 }
+
+/**
+ * The Supabase secret key. Server only: it can do anything in the database,
+ * so it is never sent to a browser and is used for just three jobs (creating
+ * sign-in codes, storing logo files, and recording payments).
+ */
+export function getSupabaseSecretKey(): string {
+  return required("SUPABASE_SECRET_KEY", process.env.SUPABASE_SECRET_KEY);
+}
+
+export function hasSupabaseSecretKey(): boolean {
+  return Boolean(process.env.SUPABASE_SECRET_KEY);
+}

@@ -9,7 +9,7 @@
  * become markup.
  */
 
-import { siteName, siteUrl } from "../../lib/site.ts";
+import { siteName, siteUrl } from "../site.ts";
 
 const NAVY = "#21174B";
 const PINK = "#FF3EB5";
@@ -35,6 +35,8 @@ export type EmailContent = {
   rows?: EmailRow[];
   /** A longer block of text the sender wrote, kept with its line breaks. */
   quote?: { label: string; text: string };
+  /** A short code the reader types in, shown large. */
+  code?: { label: string; value: string };
   button?: { label: string; href: string };
   /** Small print under the content. */
   footnote?: string;
@@ -123,6 +125,22 @@ ${
     : ""
 }
 ${
+  content.code
+    ? `<tr>
+<td style="background-color:#FFFFFF;padding:12px 32px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td align="center" style="background-color:${PALE};border-radius:12px;padding:20px;">
+<p style="margin:0 0 8px;font-family:${FONT};font-size:12px;line-height:18px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:${MUTED};">${escapeHtml(content.code.label)}</p>
+<p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:34px;line-height:40px;font-weight:bold;letter-spacing:8px;color:${NAVY};">${escapeHtml(content.code.value)}</p>
+</td>
+</tr>
+</table>
+</td>
+</tr>`
+    : ""
+}
+${
   button
     ? `<tr>
 <td style="background-color:#FFFFFF;padding:24px 32px 8px;">
@@ -160,6 +178,7 @@ ${escapeHtml(siteName)}, the global directory of recruitment agencies<br>
   for (const row of rows) lines.push(`${row.label}: ${row.value}`);
   if (rows.length) lines.push("");
   if (content.quote) lines.push(`${content.quote.label}:`, content.quote.text, "");
+  if (content.code) lines.push(`${content.code.label}: ${content.code.value}`, "");
   if (button) lines.push(`${button.label}: ${button.href}`, "");
   if (content.footnote) lines.push(content.footnote, "");
   lines.push(`${siteName}, the global directory of recruitment agencies`, siteUrl);

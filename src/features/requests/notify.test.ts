@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildConfirmationEmail, buildNotificationEmail, NOTIFICATION_RECIPIENTS } from "./notify.ts";
-import { renderEmail } from "./email-template.ts";
+import { renderEmail } from "../../lib/email/template.ts";
 
 test("notifications go to both of the owner's addresses", () => {
   assert.deepEqual([...NOTIFICATION_RECIPIENTS], ["brett@recruiterlink.com", "brettiredale@gmail.com"]);

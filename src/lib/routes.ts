@@ -15,6 +15,7 @@ export const AGENCIES_PER_PAGE = 24;
  */
 export const RESERVED_TOP_LEVEL_SLUGS = [
   "about",
+  "account",
   "agencies",
   "api",
   "contact",
@@ -58,6 +59,17 @@ export const specialismsPath = "/specialisms";
 export const searchPath = "/search";
 export const forAgenciesPath = "/for-agencies";
 export const registerInterestPath = "/for-agencies#register";
+
+// Agency accounts. Private pages: never indexed, never in a sitemap.
+export const accountPath = "/account";
+export const signInPath = "/account/sign-in";
+export const confirmSignInPath = "/account/confirm";
+export const newListingPath = "/account/new-listing";
+export const reviewPath = "/account/review";
+
+export function accountListingPath(agencyId: string): string {
+  return `/account/listings/${agencyId}`;
+}
 
 export function countryPath(countrySlug: string): string {
   return `/${countrySlug}`;

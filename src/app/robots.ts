@@ -8,9 +8,10 @@ export default function robots(): MetadataRoute.Robots {
   }
 
   return {
+    // Account pages are private, so crawlers are kept out of them.
     // Search result pages are left crawlable on purpose: they carry a
     // "noindex" that crawlers can only obey if they are allowed to read it.
-    rules: { userAgent: "*", allow: "/", disallow: ["/api/"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/account"] },
     sitemap: absoluteUrl("/sitemap.xml"),
   };
 }

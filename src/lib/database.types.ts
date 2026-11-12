@@ -122,6 +122,73 @@ export type Database = {
           },
         ]
       }
+      agency_access_requests: {
+        Row: {
+          agency_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_access_requests_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_members: {
+        Row: {
+          agency_id: string
+          created_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_members_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_specialisms: {
         Row: {
           agency_id: string
@@ -274,6 +341,85 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      listing_submissions: {
+        Row: {
+          agency_id: string | null
+          city_name: string
+          country_id: number
+          created_at: string
+          description: string
+          domain: string
+          id: string
+          introduction: string | null
+          name: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          specialism_ids: number[]
+          status: string
+          user_id: string
+          website: string
+        }
+        Insert: {
+          agency_id?: string | null
+          city_name: string
+          country_id: number
+          created_at?: string
+          description: string
+          domain: string
+          id?: string
+          introduction?: string | null
+          name: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialism_ids: number[]
+          status?: string
+          user_id: string
+          website: string
+        }
+        Update: {
+          agency_id?: string | null
+          city_name?: string
+          country_id?: number
+          created_at?: string
+          description?: string
+          domain?: string
+          id?: string
+          introduction?: string | null
+          name?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialism_ids?: number[]
+          status?: string
+          user_id?: string
+          website?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_submissions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_submissions_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_submissions_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "country_stats"
+            referencedColumns: ["country_id"]
+          },
+        ]
       }
       slug_redirects: {
         Row: {
@@ -453,6 +599,36 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_submission: {
+        Args: { submission_id: string }
+        Returns: string
+      }
+      admin_link_person: {
+        Args: { agency_slug: string; person_email: string }
+        Returns: undefined
+      }
+      admin_list_submissions: { Args: never; Returns: Json }
+      admin_reject_submission: {
+        Args: { note: string; submission_id: string }
+        Returns: undefined
+      }
+      agency_owner_emails: {
+        Args: { target_agency: string }
+        Returns: string[]
+      }
+      allow_code_attempt: { Args: { target_email: string }; Returns: boolean }
+      allow_login_email: {
+        Args: { target_email: string; visitor_ip: string }
+        Returns: boolean
+      }
+      claim_listing: { Args: { target_agency: string }; Returns: string }
+      claim_single_match: { Args: never; Returns: string }
+      decide_access_request: {
+        Args: { approve: boolean; request_id: string }
+        Returns: undefined
+      }
+      my_account: { Args: never; Returns: Json }
+      my_listing: { Args: { target_agency: string }; Returns: Json }
       search_agencies: {
         Args: {
           city_slug?: string
@@ -490,6 +666,31 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      set_agency_logo: {
+        Args: { new_logo_path: string; target_agency: string }
+        Returns: string
+      }
+      submit_new_listing: {
+        Args: {
+          new_city_name: string
+          new_country_id: number
+          new_description: string
+          new_introduction: string
+          new_name: string
+          new_specialism_ids: number[]
+          new_website: string
+        }
+        Returns: string
+      }
+      update_my_listing: {
+        Args: {
+          new_description: string
+          new_introduction: string
+          new_specialism_ids: number[]
+          target_agency: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -12,8 +12,6 @@ export const NOTIFICATION_RECIPIENTS = [
   "brettiredale@gmail.com",
 ] as const;
 
-const SENDER = "RecruiterLink <notifications@recruiterlink.com>";
-
 export type RequestNotification = {
   kind: string;
   name: string;
@@ -36,7 +34,8 @@ function oneLine(value: string | null | undefined): string {
   return (value ?? "").replace(/[\r\n]+/g, " ").trim();
 }
 
-import { renderEmail, type EmailRow } from "./email-template.ts";
+import { renderEmail, type EmailRow } from "../../lib/email/template.ts";
+import { sendEmail } from "../../lib/email/send.ts";
 
 function websiteHref(website: string): string | undefined {
   const value = oneLine(website);
@@ -98,52 +97,23 @@ export function buildConfirmationEmail(request: RequestNotification): {
   return { subject: "We have received your request", text, html };
 }
 
-async function send(apiKey: string, message: Record<string, unknown>): Promise<boolean> {
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: SENDER, ...message }),
-      signal: AbortSignal.timeout(6000),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      console.error("Email failed:", response.status, (await response.text()).slice(0, 300));
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error("Email failed:", error);
-    return false;
-  }
-}
-
 /**
  * Sends the owner's notification and the sender's confirmation through
  * Resend. Resolves to whether the owner's notification was sent.
  */
 export async function sendRequestNotification(request: RequestNotification): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("Request stored, but no email sent: RESEND_API_KEY is not set.");
-    return false;
-  }
   const notification = buildNotificationEmail(request);
   const confirmation = buildConfirmationEmail(request);
   const [notified] = await Promise.all([
-    send(apiKey, {
+    sendEmail({
       to: [...NOTIFICATION_RECIPIENTS],
-      reply_to: oneLine(request.email),
-      subject: notification.subject,
-      text: notification.text,
-      html: notification.html,
+      replyTo: oneLine(request.email),
+      ...notification,
     }),
-    send(apiKey, {
+    sendEmail({
       to: [oneLine(request.email)],
-      reply_to: NOTIFICATION_RECIPIENTS[0],
-      subject: confirmation.subject,
-      text: confirmation.text,
-      html: confirmation.html,
+      replyTo: NOTIFICATION_RECIPIENTS[0],
+      ...confirmation,
     }),
   ]);
   return notified;
