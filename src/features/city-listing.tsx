@@ -45,7 +45,7 @@ import {
   pagedPath,
   specialismPath,
 } from "@/lib/routes";
-import { agencyListJsonLd, pageMetadata } from "@/lib/seo";
+import { agencyListJsonLd, notFoundMetadata, pageMetadata } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import {
   genericLast,
@@ -143,7 +143,7 @@ function listingHeading(listing: CityListing): string {
 }
 
 export function cityListingMetadata(listing: CityListing | null): Metadata {
-  if (!listing) return {};
+  if (!listing) return notFoundMetadata;
   const { city, specialism, page, agencies } = listing;
   const heading = listingHeading(listing);
   const pageNote = page > 1 ? ` (page ${page} of ${agencies.pageCount})` : "";

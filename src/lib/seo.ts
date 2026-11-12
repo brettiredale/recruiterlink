@@ -9,6 +9,14 @@ import { agencyPath, cityPath, countryPath } from "./routes";
 import { absoluteUrl, isIndexable, siteDescription, siteName, siteUrl } from "./site";
 import { displaySpecialisms } from "./specialisms";
 
+/** The share picture drawn by `src/app/opengraph-image.tsx`. */
+const SHARE_IMAGE = {
+  url: `${siteUrl}/opengraph-image`,
+  width: 1200,
+  height: 630,
+  alt: `${siteName}: the global directory of recruitment agencies`,
+};
+
 type PageMetadataInput = {
   /** Page title without the site name (the layout adds " | RecruiterLink"). */
   title: string;
@@ -46,10 +54,19 @@ export function pageMetadata({
       url,
       title: fullTitle,
       description,
+      images: [SHARE_IMAGE],
     },
-    twitter: { card: "summary_large_image", title: fullTitle, description },
+    twitter: {
+      card: "summary_large_image",
+      title: fullTitle,
+      description,
+      images: [SHARE_IMAGE.url],
+    },
   };
 }
+
+/** For addresses that turn out not to be a page (the page then answers 404). */
+export const notFoundMetadata: Metadata = { title: "Page not found" };
 
 const ORGANIZATION_ID = `${siteUrl}/#organization`;
 const WEBSITE_ID = `${siteUrl}/#website`;

@@ -27,7 +27,7 @@ import {
   registerInterestPath,
   specialismPath,
 } from "@/lib/routes";
-import { agencyJsonLd, pageMetadata } from "@/lib/seo";
+import { agencyJsonLd, notFoundMetadata, pageMetadata } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import { displaySpecialisms } from "@/lib/specialisms";
 import { summarise, toParagraphs } from "@/lib/text";
@@ -57,7 +57,7 @@ function locationText(agency: { city: { name: string } | null; country: { name: 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const agency = await loadAgency(slug);
-  if (!agency) return {};
+  if (!agency) return notFoundMetadata;
   const place = locationText(agency);
   const specialisms = displaySpecialisms(agency.specialisms)
     .slice(0, 3)

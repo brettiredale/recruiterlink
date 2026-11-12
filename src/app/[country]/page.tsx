@@ -31,7 +31,7 @@ import {
   isValidSlug,
   specialismPath,
 } from "@/lib/routes";
-import { agencyListJsonLd, pageMetadata } from "@/lib/seo";
+import { agencyListJsonLd, notFoundMetadata, pageMetadata } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import { genericLast } from "@/lib/specialisms";
 import { agencyCountLabel } from "@/lib/text";
@@ -61,7 +61,7 @@ export async function generateMetadata({
 }: PageProps<"/[country]">): Promise<Metadata> {
   const { country: slug } = await params;
   const country = await loadCountry(slug);
-  if (!country) return {};
+  if (!country) return notFoundMetadata;
   return pageMetadata({
     title: `Recruitment agencies in ${country.name}`,
     description:

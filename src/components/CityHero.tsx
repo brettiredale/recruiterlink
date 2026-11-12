@@ -45,7 +45,8 @@ export function CityHero({
         "on-dark relative isolate flex min-h-[360px] flex-col justify-end overflow-hidden rounded-panel bg-navy p-6 text-white sm:min-h-[420px] sm:p-10 lg:p-[52px]",
         className,
       )}
-      style={photo ? undefined : { backgroundImage: fallbackBackground }}
+      // Always painted, so the panel still looks designed if a photo fails to load.
+      style={{ backgroundImage: fallbackBackground }}
     >
       {photo ? (
         <>

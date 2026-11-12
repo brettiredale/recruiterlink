@@ -22,6 +22,7 @@ export const RESERVED_TOP_LEVEL_SLUGS = [
   "for-agencies",
   "legal",
   "llms.txt",
+  "opengraph-image",
   "recruiters-in",
   "robots.txt",
   "search",

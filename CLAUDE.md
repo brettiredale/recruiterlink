@@ -172,3 +172,67 @@ nothing; every table has row level security.
   Advisory" are tagged on most agencies (the old site applied them almost
   everywhere), United States cities carry no state, and 8 published
   agencies have no city.
+
+## Site structure
+
+The public pages, built 12 Nov 2026. Addresses are built only in
+`src/lib/routes.ts`; the canonical host is `https://recruiterlink.com`
+(no www, as the old site used), recorded as `siteUrl` in `src/lib/site.ts`.
+
+- Routes: `/` home; `/countries`; `/<country>`; `/<country>/<city>`;
+  `/<country>/<city>/<specialism>`; later pages of a city or city +
+  specialism list at `.../page/<n>` (24 agencies a page, premium first);
+  `/specialisms` and `/specialisms/<slug>`; `/agencies/<slug>`;
+  `/search?q=`; `/for-agencies`; `/about`; `/contact`; `/legal`;
+  `/sitemap.xml` (index) with `/sitemaps/<name>.xml`; `/robots.txt`;
+  `/llms.txt`; `/opengraph-image`. There is no `/cities` page and no login.
+- Country slugs sit at the top level. Fixed pages always win in the router;
+  `RESERVED_TOP_LEVEL_SLUGS` in `src/lib/routes.ts` lists the words a
+  country can never use, and a test fails if a new folder in `src/app` is
+  not on it. Unknown addresses answer a real 404.
+- Rendering: every directory page exports `ensureStatic = "navigation"`, so
+  it is built once as complete HTML and stored; an address not built yet
+  waits for the whole page (so 404s and redirects carry the right status).
+  Paging uses `/page/<n>` rather than `?page=` for that reason. Only two
+  things run per visit: `/search`, and the home page's directory section,
+  which reads Vercel's `x-vercel-ip-country` header (worldwide version for
+  crawlers, unknown countries and countries with fewer than 13 agencies).
+- Caching: pages read data only through the cached readers in
+  `src/lib/directory.ts` (lifetime one day), tagged as in
+  `src/lib/cache-tags.ts`. After data changes call
+  `revalidateDirectory(...)` in `src/lib/revalidate.ts`, the one helper for
+  refreshing pages (agencies, cities, countries, or everything). The daily
+  update connector is not built; it should call this helper.
+- Indexability (`src/lib/indexability.ts`, under the `SITE_INDEXABLE`
+  switch): cities need 3 agencies; city + specialism pages need an
+  indexable city, 3 agencies for the pair and a non-generic specialism;
+  pages 2 and up, `/search`, `/legal` and the generic specialisms' pages
+  are noindex, follow, each with its own canonical. Sitemaps list only
+  indexable pages; robots.txt names the sitemap only when the switch is on.
+- Generic specialisms: `GENERIC_SPECIALISM_SLUGS` in
+  `src/lib/specialisms.ts` ("human-resources", "consulting-advisory").
+  Shown last, not used as an agency's tags when it has others, left out of
+  popular searches and FAQ answers, noindex. Headings such as "IT
+  recruitment agencies in Madrid" come from the helpers in the same file.
+- Old-site addresses (`src/lib/legacy-redirects.ts`): fixed patterns are
+  permanent redirects in `next.config.ts`; `/recruiters-in/<location>[/
+  <specialization>]` is resolved against the database by route handlers;
+  `/agencies/recruitment-...` is looked up in `slug_redirects` by the
+  agency page. The www host redirects to the bare domain.
+- Search (`src/lib/search-query.ts`): plain rules, no AI. The text after
+  the last " in " is tried as a city or country; what is left is matched to
+  a specialism or searched as keywords with `search_agencies`.
+- Forms: `/for-agencies` and `/contact` store requests in
+  `public.listing_requests` (the public can insert and nothing else; a
+  trigger allows 3 an hour per email and 200 an hour in all; a hidden
+  honeypot field drops bots). Nobody is notified: the owner reads the table
+  in Supabase. Payments and logins do not exist.
+- City photos: `CityHero` shows `cities.photo_path` from bucket
+  `city-photos` with the "AI-generated image" label, else a gradient.
+- Tests: `npm test` (Node's built-in runner, no extra packages) covers
+  routes and reserved words, specialism wording, indexability, search
+  parsing, redirect mapping, FAQ text and form validation. Files tested
+  this way import each other with the `.ts` ending.
+- Structured data: Organization + WebSite (home), BreadcrumbList (inner
+  pages), ItemList (lists), EmploymentAgency (agency pages), FAQPage. Only
+  database facts; no ratings, reviews, founding years or staff numbers.

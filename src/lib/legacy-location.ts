@@ -1,4 +1,4 @@
-import { getCitiesBySlug, getCountry } from "./directory";
+import { getCitiesBySlug, getCity, getCitySpecialisms, getCountry } from "./directory";
 import { cleanLegacySegment, legacyLocationTarget } from "./legacy-redirects";
 import { isValidSlug } from "./routes";
 
@@ -30,6 +30,19 @@ export async function legacyLocationRedirect(
         citySlug: city.slug,
       })),
     });
+
+    // A city + specialism address is only used when that city really has
+    // agencies for the specialism; otherwise the city page is the closest.
+    const [countrySlug, citySlug, specialismSlug] = target.slice(1).split("/");
+    if (specialismSlug) {
+      const city = await getCity(countrySlug, citySlug);
+      const specialisms = city
+        ? await getCitySpecialisms({ id: city.id, slug: city.slug, countrySlug })
+        : [];
+      if (!specialisms.some((item) => item.slug === specialismSlug)) {
+        target = city ? `/${countrySlug}/${citySlug}` : "/countries";
+      }
+    }
   }
 
   return new Response(null, {

@@ -23,7 +23,7 @@ import {
   specialismPath,
   specialismsPath,
 } from "@/lib/routes";
-import { pageMetadata } from "@/lib/seo";
+import { notFoundMetadata, pageMetadata } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import {
   genericLast,
@@ -58,7 +58,7 @@ async function loadSpecialism(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { specialism: slug } = await params;
   const loaded = await loadSpecialism(slug);
-  if (!loaded) return {};
+  if (!loaded) return notFoundMetadata;
   const { specialism } = loaded;
   return pageMetadata({
     title: `${specialismHeading(specialism)} worldwide`,
