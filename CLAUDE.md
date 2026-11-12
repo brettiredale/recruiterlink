@@ -18,6 +18,15 @@ external bot through a connector.
   of the old site's agency table (`legacy.recruitment_agencies`, 25,640 rows,
   loaded and verified 12 Nov 2026). Build the clean public tables from it
   with migrations. Never expose it through the API or edit it in place.
+- Logos: storage bucket `agency-logos` (public read) holds 25,357 logos
+  copied from the old site on 12 Nov 2026, each named
+  `<agency id>.<jpg|png|gif|webp>` using the agency's id in
+  `legacy.recruitment_agencies`. 283 agencies have none: 5 had no logo
+  address, 272 pointed at the source's generic placeholder, 2 were SVG
+  (deliberately not accepted) and 4 source files no longer exist. Show an
+  initials placeholder for those.
+- Edge function `copy-legacy-logos` is a retired one-off (it answers 410).
+  The owner can delete it in the Supabase dashboard; do not reuse it.
 - Migrations: `supabase/migrations/`, one file per migration applied to the
   database, named `<version>_<name>.sql` to match Supabase's own record.
 - Old site: repository `brettiredale/RecruiterLink-Live`, Vercel project
