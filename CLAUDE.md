@@ -124,3 +124,51 @@ external bot through a connector.
 - `/api/health` reports whether the deployment's Supabase settings work.
   Vercel does not let Claude read or change project settings, so this is
   how to confirm them after the owner edits them in Vercel.
+
+## Database
+
+Built from `legacy.recruitment_agencies` by the migrations of 12 Nov 2026.
+The public (anyone with the site's key) can read published data and write
+nothing; every table has row level security.
+
+- Public tables: `countries` (31; name, slug, iso2), `cities` (3,165; slug
+  unique within its country, optional `photo_path`), `specialisms` (44 fixed
+  sectors; name, slug, sort_order), `agencies` (25,640: 25,497 `published`,
+  143 `hidden` duplicates that point at the kept one in `duplicate_of`),
+  `agency_specialisms`, `slug_redirects` (every old-site slug to the agency
+  it should now reach).
+- `agencies` columns that matter for pages: `slug` (new, e.g.
+  `caroo-manchester`), `legacy_slug`, `website` (always `https://<host>`),
+  `domain`, `description`, `introduction`, `logo_path` (file in bucket
+  `agency-logos`; null means initials placeholder), `plan` (`free` or
+  `premium`), `is_claimed`, `status`. Kept by the database: `is_premium`,
+  `sort_name`, `quality_score` (premium 8 + claimed 4 + logo 2 +
+  description 1), `search_vector` and `updated_at` (triggers).
+- Schema `private` (the API cannot reach it): `agency_private` (unverified
+  emails, old plan and status, Stripe ids, claim details, old user ids) and
+  the audit tables for the clean-up: `legacy_specialism_map` and
+  `specialism_rules` (old labels to specialisms), `legacy_city_map`,
+  `legacy_agency_overrides`, `text_cleaning_rules` (removal of the false
+  "established in 2020" claims). Helper functions also live there.
+- Count views, all live and counting published agencies only:
+  `country_stats`, `city_stats` (has `is_indexable`: true at 3 or more
+  agencies, never stored), `specialism_stats`, `city_specialism_stats`,
+  `country_specialism_stats`, `directory_totals`.
+- Search: function `search_agencies(search_query, country_slug, city_slug,
+  result_limit, result_offset)`; Postgres full-text, premium first.
+- To list premium first then by name: `order by is_premium desc, sort_name`.
+- Types: `src/lib/database.types.ts` (regenerate after any migration).
+- Data layer for pages, `src/lib/data` (import from `@/lib/data`); plain
+  async functions with no caching of their own, so call them inside
+  `"use cache"` functions or components: `getDirectoryTotals`,
+  `listCountries`, `getCountryBySlug`, `listCitiesForCountry`,
+  `listIndexableCities`, `getCityBySlugs`, `listSpecialisms`,
+  `getSpecialismBySlug`, `listSpecialismsForCity`,
+  `listSpecialismsForCountry`, `listAgenciesForCity`,
+  `listAgenciesForCountry`, `getAgencyBySlug`, `resolveLegacySlug`,
+  `listFeaturedAgencies`, `searchAgencies`, `agencyLogoUrl`. The Supabase
+  client is `getSupabaseServerClient()` in `src/lib/supabase/server.ts`.
+- Known limits of the old data: "Human Resources" and "Consulting &
+  Advisory" are tagged on most agencies (the old site applied them almost
+  everywhere), United States cities carry no state, and 8 published
+  agencies have no city.
