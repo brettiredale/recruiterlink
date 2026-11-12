@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildNotificationEmail, NOTIFICATION_RECIPIENTS } from "./notify.ts";
+import { buildConfirmationEmail, buildNotificationEmail, NOTIFICATION_RECIPIENTS } from "./notify.ts";
+import { renderEmail } from "./email-template.ts";
 
 test("notifications go to both of the owner's addresses", () => {
   assert.deepEqual([...NOTIFICATION_RECIPIENTS], ["brett@recruiterlink.com", "brettiredale@gmail.com"]);
@@ -38,4 +39,40 @@ test("optional details are left out when empty", () => {
   assert.ok(!text.includes("Agency:"));
   assert.ok(!text.includes("Website:"));
   assert.ok(!text.includes("Message:"));
+});
+
+test("nothing a visitor types can become markup in the designed email", () => {
+  const { html } = buildNotificationEmail({
+    kind: "claim",
+    name: '<script>alert(1)</script>',
+    email: "a@example.com",
+    agencyName: '"><img src=x onerror=alert(1)>',
+    website: "javascript:alert(1)",
+    message: "<b>bold</b> & more",
+  });
+  assert.ok(!html.includes("<script>alert"));
+  assert.ok(!html.includes("<img src=x"));
+  assert.ok(!html.includes('href="javascript:'));
+  assert.ok(html.includes("&lt;b&gt;bold&lt;/b&gt; &amp; more"));
+});
+
+test("the designed email is branded and has a plain-text twin", () => {
+  const { html, text } = buildNotificationEmail({ kind: "contact", name: "Sam Lee", email: "sam@example.com", message: "Hello there" });
+  assert.ok(html.includes("recruiter<span"));
+  assert.ok(html.includes("#21174B") && html.includes("#FF3EB5"));
+  assert.ok(!/<img\b/i.test(html), "no images: better for deliverability");
+  assert.ok(text.includes("Sam Lee") && text.includes("Hello there"));
+});
+
+test("the sender gets a confirmation that names them and promises nothing false", () => {
+  const { subject, html, text } = buildConfirmationEmail({ kind: "claim", name: "Ana Ruiz", email: "ana@example.com", agencyName: "Ruiz Talent" });
+  assert.equal(subject, "We have received your request");
+  assert.ok(text.includes("Thanks, Ana.") && text.includes("Ruiz Talent"));
+  assert.ok(html.includes("https://recruiterlink.com/"));
+});
+
+test("only web and mail addresses become links", () => {
+  const { html } = renderEmail({ preheader: "p", heading: "h", rows: [{ label: "Site", value: "x", href: "data:text/html,hi" }], button: { label: "Go", href: "javascript:void(0)" } });
+  assert.ok(!html.includes("data:text/html"));
+  assert.ok(!html.includes("javascript:"));
 });

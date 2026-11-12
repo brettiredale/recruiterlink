@@ -36,57 +36,115 @@ function oneLine(value: string | null | undefined): string {
   return (value ?? "").replace(/[\r\n]+/g, " ").trim();
 }
 
-/** Builds the plain-text email. Plain text on purpose: nothing a visitor types can become markup. */
+import { renderEmail, type EmailRow } from "./email-template.ts";
+
+function websiteHref(website: string): string | undefined {
+  const value = oneLine(website);
+  if (!value) return undefined;
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+/** The email the owner receives for each request. */
 export function buildNotificationEmail(request: RequestNotification): {
   subject: string;
   text: string;
+  html: string;
 } {
   const label = KIND_LABELS[request.kind] ?? "Website request";
   const who = oneLine(request.agencyName) || oneLine(request.name);
-  const lines = [
-    `${label} from the RecruiterLink website`,
-    "",
-    `Name: ${oneLine(request.name)}`,
-    `Email: ${oneLine(request.email)}`,
+  const rows: EmailRow[] = [
+    { label: "Name", value: oneLine(request.name) },
+    { label: "Email", value: oneLine(request.email), href: `mailto:${oneLine(request.email)}` },
   ];
-  if (oneLine(request.agencyName)) lines.push(`Agency: ${oneLine(request.agencyName)}`);
-  if (oneLine(request.website)) lines.push(`Website: ${oneLine(request.website)}`);
-  if (oneLine(request.sourcePath)) lines.push(`Sent from: ${oneLine(request.sourcePath)}`);
+  if (oneLine(request.agencyName)) rows.push({ label: "Agency", value: oneLine(request.agencyName) });
+  if (oneLine(request.website)) {
+    rows.push({ label: "Website", value: oneLine(request.website), href: websiteHref(request.website ?? "") });
+  }
+  if (oneLine(request.sourcePath)) rows.push({ label: "Sent from", value: oneLine(request.sourcePath) });
   const message = (request.message ?? "").trim();
-  if (message) lines.push("", "Message:", message);
-  lines.push("", "Reply to this email to answer the sender directly.");
-  return { subject: `${label}: ${who}`.slice(0, 180), text: lines.join("\n") };
+  const { html, text } = renderEmail({
+    preheader: `${label} from ${who}`,
+    eyebrow: "New request",
+    heading: `${label}: ${who}`,
+    paragraphs: ["Someone has sent a request through the RecruiterLink website."],
+    rows,
+    quote: message ? { label: "Message", text: message } : undefined,
+    footnote: "Reply to this email to answer the sender directly.",
+  });
+  return { subject: `${label}: ${who}`.slice(0, 180), text, html };
 }
 
-/** Sends the notification through Resend. Resolves to whether it was sent. */
-export async function sendRequestNotification(request: RequestNotification): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("Request stored, but no notification sent: RESEND_API_KEY is not set.");
-    return false;
-  }
-  const { subject, text } = buildNotificationEmail(request);
+/** The confirmation the sender receives, so they know the request arrived. */
+export function buildConfirmationEmail(request: RequestNotification): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const firstName = oneLine(request.name).split(" ")[0] || "there";
+  const about =
+    request.kind === "contact"
+      ? "your message"
+      : `your request about ${oneLine(request.agencyName) || "your agency"}`;
+  const { html, text } = renderEmail({
+    preheader: `We have received ${about}.`,
+    eyebrow: "Request received",
+    heading: `Thanks, ${firstName}. We have your request.`,
+    paragraphs: [
+      `This is to confirm that we have received ${about}. A member of the RecruiterLink team will reply to you by email.`,
+    ],
+    button: { label: "Visit RecruiterLink", href: "https://recruiterlink.com/" },
+    footnote: "You are receiving this because this address was entered in a form on recruiterlink.com. If that was not you, you can ignore this email.",
+  });
+  return { subject: "We have received your request", text, html };
+}
+
+async function send(apiKey: string, message: Record<string, unknown>): Promise<boolean> {
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: SENDER,
-        to: [...NOTIFICATION_RECIPIENTS],
-        reply_to: oneLine(request.email),
-        subject,
-        text,
-      }),
+      body: JSON.stringify({ from: SENDER, ...message }),
       signal: AbortSignal.timeout(6000),
       cache: "no-store",
     });
     if (!response.ok) {
-      console.error("Request notification failed:", response.status, (await response.text()).slice(0, 300));
+      console.error("Email failed:", response.status, (await response.text()).slice(0, 300));
       return false;
     }
     return true;
   } catch (error) {
-    console.error("Request notification failed:", error);
+    console.error("Email failed:", error);
     return false;
   }
+}
+
+/**
+ * Sends the owner's notification and the sender's confirmation through
+ * Resend. Resolves to whether the owner's notification was sent.
+ */
+export async function sendRequestNotification(request: RequestNotification): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("Request stored, but no email sent: RESEND_API_KEY is not set.");
+    return false;
+  }
+  const notification = buildNotificationEmail(request);
+  const confirmation = buildConfirmationEmail(request);
+  const [notified] = await Promise.all([
+    send(apiKey, {
+      to: [...NOTIFICATION_RECIPIENTS],
+      reply_to: oneLine(request.email),
+      subject: notification.subject,
+      text: notification.text,
+      html: notification.html,
+    }),
+    send(apiKey, {
+      to: [oneLine(request.email)],
+      reply_to: NOTIFICATION_RECIPIENTS[0],
+      subject: confirmation.subject,
+      text: confirmation.text,
+      html: confirmation.html,
+    }),
+  ]);
+  return notified;
 }
