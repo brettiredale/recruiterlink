@@ -58,8 +58,8 @@ test("nothing a visitor types can become markup in the designed email", () => {
 
 test("the designed email is branded and has a plain-text twin", () => {
   const { html, text } = buildNotificationEmail({ kind: "contact", name: "Sam Lee", email: "sam@example.com", message: "Hello there" });
-  assert.ok(html.includes("recruiter<span"));
-  assert.ok(html.includes("#21174B") && html.includes("#FF3EB5"));
+  assert.ok(html.includes("Recruiter<span") && html.includes("#EE1E80"));
+  assert.ok(html.includes("#21174B"));
   assert.ok(!/<img\b/i.test(html), "no images: better for deliverability");
   assert.ok(text.includes("Sam Lee") && text.includes("Hello there"));
 });

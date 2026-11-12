@@ -3,7 +3,8 @@
  *
  * Built for inboxes, not browsers: tables for layout, inline styles, system
  * fonts and no images, because Outlook and Gmail strip most modern CSS and
- * image-heavy mail is more likely to be filtered. Every email also gets a
+ * image-heavy mail is more likely to be filtered. The logo is therefore
+ * styled text in the logo's capitals and colours, not the artwork itself. Every email also gets a
  * plain-text version. All values are escaped: nothing a visitor types can
  * become markup.
  */
@@ -12,6 +13,8 @@ import { siteName, siteUrl } from "../../lib/site.ts";
 
 const NAVY = "#21174B";
 const PINK = "#FF3EB5";
+/** The pink of the RecruiterLink logo itself (logo set "13 Soft"). */
+const LOGO_PINK = "#EE1E80";
 const LAVENDER = "#EAEBFB";
 const PALE = "#F6F7FE";
 const MUTED = "#4B436D";
@@ -83,7 +86,7 @@ export function renderEmail(content: EmailContent): { html: string; text: string
 <td align="center" style="padding:32px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
 <tr>
-<td style="background-color:${NAVY};border-radius:16px 16px 0 0;padding:26px 32px;font-family:${FONT};font-size:26px;line-height:30px;font-weight:bold;letter-spacing:-0.5px;color:#FFFFFF;">recruiter<span style="color:${PINK};">link</span></td>
+<td style="background-color:${NAVY};border-radius:16px 16px 0 0;padding:26px 32px;font-family:${FONT};font-size:26px;line-height:30px;font-weight:bold;letter-spacing:-0.5px;color:#FFFFFF;">Recruiter<span style="color:${LOGO_PINK};">Link</span></td>
 </tr>
 <tr>
 <td style="background-color:#FFFFFF;padding:36px 32px 8px;">
