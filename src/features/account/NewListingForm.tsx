@@ -184,7 +184,7 @@ export function NewListingForm({
           </SubmitButton>
         </div>
         <p className="text-[15px] text-muted">
-          A free listing costs nothing. You can add your logo once the listing is published.
+          A free listing costs nothing. We take your logo from your website, and you can change it once the listing is published.
         </p>
       </div>
     </form>

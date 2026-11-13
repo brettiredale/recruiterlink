@@ -39,3 +39,17 @@ export function getSupabaseSecretKey(): string {
 export function hasSupabaseSecretKey(): boolean {
   return Boolean(process.env.SUPABASE_SECRET_KEY);
 }
+
+/** Firecrawl key, for reading an agency's website. Server only; null when not set. */
+export function getFirecrawlKey(): string | null {
+  return process.env.FIRECRAWL_API_KEY || null;
+}
+
+/**
+ * logo.dev publishable key (starts "pk_"). logo.dev treats it as public, but
+ * it is only used on the server here, to fetch a logo once and store a copy.
+ */
+export function getLogoDevKey(): string | null {
+  const key = process.env.LOGO_DEV_PUBLISHABLE_KEY;
+  return key?.startsWith("pk_") ? key : null;
+}

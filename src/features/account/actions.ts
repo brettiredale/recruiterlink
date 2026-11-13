@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { sendEmail } from "@/lib/email/send";
 import { hasSupabaseSecretKey } from "@/lib/env";
 import { getCountries, getRegions } from "@/lib/directory";
@@ -28,6 +29,7 @@ import {
   buildSubmissionEmail,
 } from "./emails";
 import { linkOrigin, visitorIp } from "./origin";
+import { lookForSubmissionLogo, OWN_LOGO_NAME, removeLogoFile } from "./submission-logo";
 import {
   ACCOUNT_HONEYPOT_FIELD,
   LOGO_MAX_BYTES,
@@ -367,9 +369,6 @@ export async function saveListing(_previous: ListingFormState, formData: FormDat
 
 export type LogoFormState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
-/** Only files this feature stored; the logos copied from the old site are never deleted. */
-const OWN_LOGO_NAME = /^[0-9a-f-]{36}-\d{10,16}\.(png|jpg|webp)$/;
-
 /** Replaces (or removes) a listing's logo. */
 export async function saveLogo(_previous: LogoFormState, formData: FormData): Promise<LogoFormState> {
   const agencyId = parseUuid(formData.get("agency_id"));
@@ -485,7 +484,7 @@ export async function submitNewListing(_previous: NewListingState, formData: For
 
   try {
     const supabase = await getSupabaseSessionClient();
-    const { error } = await supabase.rpc("submit_new_listing", {
+    const { data: submissionId, error } = await supabase.rpc("submit_new_listing", {
       new_name: listing.name,
       new_website: listing.website,
       new_country_id: listing.countryId as number,
@@ -500,6 +499,8 @@ export async function submitNewListing(_previous: NewListingState, formData: For
       if (!known) console.error("submit_new_listing failed:", error.code, error.message);
       return { status: "error", at: Date.now(), message: known ?? TRY_AGAIN, errors: {}, values };
     }
+    // Found after the agency has its answer, so they never wait on it.
+    if (submissionId) after(() => lookForSubmissionLogo(submissionId, listing.website, account.domain));
 
     const message = buildSubmissionEmail({
       name: listing.name,
@@ -622,6 +623,7 @@ export async function reviewSubmission(formData: FormData): Promise<void> {
       console.error("admin_reject_submission failed:", error.code, error.message);
       redirect(`${reviewPath}?notice=failed`);
     }
+    if (submission.logo_path) await removeLogoFile(submission.logo_path);
   }
 
   const message = buildDecisionEmail({
@@ -633,6 +635,28 @@ export async function reviewSubmission(formData: FormData): Promise<void> {
   });
   await sendEmail({ to: [submission.email], replyTo: NOTIFICATION_RECIPIENTS[0], ...message });
   redirect(`${reviewPath}?notice=${approve ? "published" : "rejected"}`);
+}
+
+/** Looks for a listing's logo again, for the review page. */
+export async function findSubmissionLogo(formData: FormData): Promise<void> {
+  const submissionId = parseUuid(formData.get("submission_id"));
+  if (!submissionId) redirect(reviewPath);
+
+  // Null unless this person runs the site.
+  const pending = await getPendingSubmissions();
+  const submission = pending?.find((s) => s.id === submissionId);
+  if (!submission) redirect(`${reviewPath}?notice=not-found`);
+
+  let domain: string;
+  try {
+    domain = new URL(submission.website).hostname.replace(/^www\./, "");
+  } catch {
+    redirect(`${reviewPath}?notice=logo-none`);
+  }
+  await lookForSubmissionLogo(submission.id, submission.website, domain);
+
+  const latest = (await getPendingSubmissions())?.find((s) => s.id === submissionId);
+  redirect(`${reviewPath}?notice=${latest?.logo_path ? "logo-found" : "logo-none"}`);
 }
 
 export type LinkPersonState =

@@ -471,6 +471,9 @@ export type Database = {
           domain: string
           id: string
           introduction: string | null
+          logo_checked_at: string | null
+          logo_path: string | null
+          logo_source: string | null
           name: string
           region_id: number | null
           review_note: string | null
@@ -490,6 +493,9 @@ export type Database = {
           domain: string
           id?: string
           introduction?: string | null
+          logo_checked_at?: string | null
+          logo_path?: string | null
+          logo_source?: string | null
           name: string
           review_note?: string | null
           reviewed_at?: string | null
@@ -508,6 +514,9 @@ export type Database = {
           domain?: string
           id?: string
           introduction?: string | null
+          logo_checked_at?: string | null
+          logo_path?: string | null
+          logo_source?: string | null
           name?: string
           region_id?: number | null
           review_note?: string | null
@@ -902,6 +911,14 @@ export type Database = {
       }
       set_agency_logo: {
         Args: { new_logo_path: string; target_agency: string }
+        Returns: string
+      }
+      set_submission_logo: {
+        Args: {
+          new_logo_path: string
+          new_logo_source: string
+          target_submission: string
+        }
         Returns: string
       }
       submit_new_listing: {

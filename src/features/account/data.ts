@@ -91,6 +91,11 @@ export type PendingSubmission = {
   region_code: string | null;
   /** False when approving will add this city to the directory. */
   city_exists: boolean;
+  /** The logo found for the listing, in the agency-logos bucket. */
+  logo_path: string | null;
+  logo_source: "website" | "logo.dev" | null;
+  /** Null while the logo search is still running. */
+  logo_checked_at: string | null;
   /** The existing city the listing joins on approval, from match_city. */
   matched_city: {
     id: number;

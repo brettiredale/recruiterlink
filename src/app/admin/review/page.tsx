@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { buttonClasses } from "@/components";
+import { buttonClasses, LogoImage } from "@/components";
 import { Panel } from "@/features/account/AccountShell";
-import { reviewSubmission } from "@/features/account/actions";
+import { findSubmissionLogo, reviewSubmission } from "@/features/account/actions";
 import { getPendingSubmissions } from "@/features/account/data";
 import { LinkPersonForm } from "@/features/account/SmallForms";
 import { Notice, SubmitButton, inputClass } from "@/features/account/ui";
@@ -25,8 +25,15 @@ const NOTICES: Record<string, { tone: "success" | "error" | "info"; text: string
     text: "This city is not in the directory yet and the listing has no state, province or territory, so it was not published. Ask the agency to send it in again with one.",
   },
   "city-invalid": { tone: "error", text: "The city name cannot be used, so this listing was not published." },
+  "logo-found": { tone: "success", text: "Logo found. It is shown on the listing below." },
+  "logo-none": {
+    tone: "info",
+    text: "No usable logo was found on their website or on logo.dev. The agency can add one once the listing is published.",
+  },
   failed: { tone: "error", text: "That did not work. Please try again." },
 };
+
+const LOGO_SOURCE = { website: "From their website", "logo.dev": "From logo.dev" } as const;
 
 async function Review({ searchParams }: { searchParams: PageProps<"/admin/review">["searchParams"] }) {
   const [account, params] = await Promise.all([requireAdmin(), searchParams]);
@@ -54,9 +61,29 @@ async function Review({ searchParams }: { searchParams: PageProps<"/admin/review
         <ul className="flex flex-col gap-8">
           {submissions.map((submission) => (
             <li key={submission.id} className="rounded-panel border-[1.5px] border-line-mid bg-white p-5 sm:p-9">
-              <h2 className="mb-4 font-heading text-[clamp(1.5rem,2.6vw,2rem)] leading-tight font-extrabold tracking-[-0.03em] break-words">
-                {submission.name}
-              </h2>
+              <div className="mb-6 flex flex-wrap items-center gap-5">
+                <LogoImage name={submission.name} file={submission.logo_path} size={96} />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <h2 className="font-heading text-[clamp(1.5rem,2.6vw,2rem)] leading-tight font-extrabold tracking-[-0.03em] break-words">
+                    {submission.name}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px] text-muted">
+                    <span>
+                      {submission.logo_path
+                        ? `Logo: ${LOGO_SOURCE[submission.logo_source ?? "website"]}`
+                        : submission.logo_checked_at
+                          ? "No logo found"
+                          : "Looking for a logo…"}
+                    </span>
+                    <form action={findSubmissionLogo}>
+                      <input type="hidden" name="submission_id" value={submission.id} />
+                      <SubmitButton pendingLabel="Looking…" variant="outline">
+                        Look for a logo again
+                      </SubmitButton>
+                    </form>
+                  </div>
+                </div>
+              </div>
               <dl className="mb-6 grid gap-x-10 gap-y-4 text-[17px] sm:grid-cols-2">
                 <div>
                   <dt className="text-[15px] text-muted">Website</dt>
