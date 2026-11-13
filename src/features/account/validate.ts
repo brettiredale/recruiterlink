@@ -4,6 +4,8 @@
  * defence (see the `create_agency_accounts` migration).
  */
 
+import type { RegionChoices } from "@/lib/regions";
+
 export const LISTING_LIMITS = {
   name: { min: 2, max: 120 },
   city: { min: 2, max: 80 },
@@ -128,13 +130,15 @@ export function validateListingText(raw: {
   return Object.keys(errors).length ? { ok: false, errors, value } : { ok: true, value };
 }
 
-export type NewListingField = "name" | "website" | "country" | "city" | ListingTextField;
+export type NewListingField = "name" | "website" | "country" | "region" | "city" | ListingTextField;
 export type NewListingErrors = Partial<Record<NewListingField, string>>;
 
 export type NewListing = ListingText & {
   name: string;
   website: string;
   countryId: number | null;
+  /** The state, province or territory; null for countries that have none. */
+  regionId: number | null;
   city: string;
 };
 
@@ -147,18 +151,22 @@ export function validateNewListing(
     name: unknown;
     website: unknown;
     country: unknown;
+    region?: unknown;
     city: unknown;
     introduction: unknown;
     description: unknown;
     specialisms: unknown[];
   },
   accountDomain: string,
+  regionChoices: RegionChoices = {},
 ): { ok: true; value: NewListing } | { ok: false; errors: NewListingErrors; value: NewListing } {
   const countryId = typeof raw.country === "string" ? Number(raw.country) : NaN;
+  const regionId = typeof raw.region === "string" && raw.region ? Number(raw.region) : NaN;
   const value: NewListing = {
     name: cleanLine(raw.name),
     website: cleanLine(raw.website),
     countryId: Number.isInteger(countryId) && countryId > 0 ? countryId : null,
+    regionId: Number.isInteger(regionId) && regionId > 0 ? regionId : null,
     city: cleanLine(raw.city),
     introduction: cleanText(raw.introduction),
     description: cleanText(raw.description),
@@ -177,6 +185,12 @@ export function validateNewListing(
   }
 
   if (value.countryId === null) errors.country = "Choose a country.";
+  const regions = value.countryId === null ? undefined : regionChoices[value.countryId];
+  if (!regions) value.regionId = null;
+  else if (value.regionId === null || !regions.options.some((r) => r.id === value.regionId)) {
+    value.regionId = null;
+    errors.region = `Choose the ${regions.label.toLowerCase()}.`;
+  }
   if (value.city.length < city.min) errors.city = "Enter the city your agency is based in.";
   else if (value.city.length > city.max) errors.city = `Keep the city to ${city.max} characters or fewer.`;
 

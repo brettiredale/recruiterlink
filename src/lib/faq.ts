@@ -3,6 +3,7 @@
  * only. Pure functions, unit tested. Generic specialisms never appear in
  * an answer.
  */
+import { cityLabel } from "./regions.ts";
 import {
   sentenceList,
   specialismAgenciesPhrase,
@@ -55,7 +56,7 @@ export function countryFaqs(input: {
   country: string;
   agencyCount: number;
   cityCount: number;
-  cities: readonly { name: string; agencyCount: number }[];
+  cities: readonly { name: string; agencyCount: number; region?: { code: string } | null }[];
   specialisms: readonly Counted[];
 }): Faq[] {
   const { country, agencyCount, cityCount } = input;
@@ -73,7 +74,7 @@ export function countryFaqs(input: {
     faqs.push({
       question: `Which cities in ${country} have the most recruitment agencies?`,
       answer: `${sentenceList(
-        topCities.map((city) => `${city.name} (${city.agencyCount.toLocaleString("en")})`),
+        topCities.map((city) => `${cityLabel(city)} (${city.agencyCount.toLocaleString("en")})`),
       )} have the most recruitment agencies in our ${country} directory.`,
     });
   }

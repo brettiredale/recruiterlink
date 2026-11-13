@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cityLabel } from "@/lib/regions";
 import { notFound } from "next/navigation";
 import {
   AgencyList,
@@ -166,7 +167,7 @@ export default async function CountryPage({ params }: PageProps<"/[country]">) {
             {topCities.map((city) => (
               <CityPillLink
                 key={city.id}
-                name={city.name}
+                name={cityLabel(city)}
                 count={city.agencyCount}
                 href={cityPath(country.slug, city.slug)}
               />
@@ -181,7 +182,7 @@ export default async function CountryPage({ params }: PageProps<"/[country]">) {
               </h3>
               <CompactLinks
                 links={allCitiesByName.map((city) => ({
-                  label: city.name,
+                  label: cityLabel(city),
                   href: cityPath(country.slug, city.slug),
                   count: city.agencyCount,
                 }))}

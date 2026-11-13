@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useId, useRef } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { cityLabel, type RegionChoices } from "@/lib/regions";
 import { submitNewListing, type NewListingState } from "./actions";
 import {
   CountedTextarea,
@@ -12,16 +13,18 @@ import {
   describedBy,
   inputClass,
 } from "./ui";
-import { LISTING_LIMITS } from "./validate";
+import { LISTING_LIMITS, type NewListingErrors } from "./validate";
 
 /** A brand-new listing, sent for review before it appears on the site. */
 export function NewListingForm({
   domain,
   countries,
+  regionChoices,
   specialisms,
 }: {
   domain: string;
   countries: { id: number; name: string }[];
+  regionChoices: RegionChoices;
   specialisms: { id: number; name: string }[];
 }) {
   const [state, action] = useActionState<NewListingState, FormData>(submitNewListing, {
@@ -116,46 +119,13 @@ export function NewListingForm({
         />
       </Field>
 
-      <div className="grid gap-7 sm:grid-cols-2">
-        <Field
-          id={fid("country")}
-          label="Country"
-          hint="Where your main office is."
-          error={errors.country}
-        >
-          <select
-            id={fid("country")}
-            name="country"
-            required
-            defaultValue={text("country")}
-            aria-invalid={errors.country ? true : undefined}
-            aria-describedby={describedBy(fid("country"), true, Boolean(errors.country))}
-            className={inputClass}
-          >
-            <option value="">Choose a country</option>
-            {countries.map((country) => (
-              <option key={country.id} value={country.id}>
-                {country.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field id={fid("city")} label="City" hint="Your main office's city." error={errors.city}>
-          <input
-            id={fid("city")}
-            name="city"
-            type="text"
-            autoComplete="address-level2"
-            maxLength={LISTING_LIMITS.city.max}
-            required
-            defaultValue={text("city")}
-            aria-invalid={errors.city ? true : undefined}
-            aria-describedby={describedBy(fid("city"), true, Boolean(errors.city))}
-            className={inputClass}
-          />
-        </Field>
-      </div>
+      <PlaceFields
+        fid={fid}
+        countries={countries}
+        regionChoices={regionChoices}
+        errors={errors}
+        initial={{ country: text("country"), region: text("region"), city: text("city") }}
+      />
       <p className="-mt-3 text-[15px] text-muted">
         Is your country not in the list?{" "}
         <Link href="/contact" className="font-bold text-indigo underline underline-offset-4">
@@ -218,5 +188,167 @@ export function NewListingForm({
         </p>
       </div>
     </form>
+  );
+}
+
+type Suggestion = { name: string; regionCode: string | null; agencyCount: number };
+
+/**
+ * Country, state and city. The state list follows the country, and the city
+ * field suggests the cities already in the directory, so an agency joins the
+ * existing "Miami, FL" instead of making a second Miami. The server matches
+ * the city again on review, whatever is typed.
+ */
+function PlaceFields({
+  fid,
+  countries,
+  regionChoices,
+  errors,
+  initial,
+}: {
+  fid: (name: string) => string;
+  countries: { id: number; name: string }[];
+  regionChoices: RegionChoices;
+  errors: NewListingErrors;
+  initial: { country: string; region: string; city: string };
+}) {
+  const [country, setCountry] = useState(initial.country);
+  const [region, setRegion] = useState(initial.region);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const lookup = useRef<{ timer?: ReturnType<typeof setTimeout>; abort?: AbortController }>({});
+  const regions = country ? regionChoices[Number(country)] : undefined;
+  const listId = fid("city-suggestions");
+
+  useEffect(() => {
+    const current = lookup.current;
+    return () => {
+      clearTimeout(current.timer);
+      current.abort?.abort();
+    };
+  }, []);
+
+  function suggest(typed: string) {
+    clearTimeout(lookup.current.timer);
+    lookup.current.abort?.abort();
+    if (!country || typed.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    lookup.current.timer = setTimeout(async () => {
+      const abort = new AbortController();
+      lookup.current.abort = abort;
+      try {
+        const params = new URLSearchParams({ country, q: typed.trim() });
+        const res = await fetch(`/api/cities?${params.toString()}`, { signal: abort.signal });
+        if (!res.ok) return;
+        const body = (await res.json()) as { cities?: Suggestion[] };
+        setSuggestions(body.cities ?? []);
+      } catch {
+        // Suggestions are a help only; the form works without them.
+      }
+    }, 200);
+  }
+
+  function onCityInput(typed: string) {
+    // Picking "Miami, FL" from the list also picks Florida.
+    const picked = suggestions.find((city) => cityLabel(city) === typed);
+    if (picked?.regionCode && regions) {
+      const match = regions.options.find((option) => option.code === picked.regionCode);
+      if (match) setRegion(String(match.id));
+    }
+    suggest(typed);
+  }
+
+  const cityField = (
+    <Field
+      id={fid("city")}
+      label="City"
+      hint={regions ? "Start typing to see the cities we list." : "Your main office's city."}
+      error={errors.city}
+    >
+      <input
+        id={fid("city")}
+        name="city"
+        type="text"
+        autoComplete="address-level2"
+        maxLength={LISTING_LIMITS.city.max}
+        required
+        defaultValue={initial.city}
+        list={suggestions.length > 0 ? listId : undefined}
+        onChange={(event) => onCityInput(event.currentTarget.value)}
+        aria-invalid={errors.city ? true : undefined}
+        aria-describedby={describedBy(fid("city"), true, Boolean(errors.city))}
+        className={inputClass}
+      />
+      <datalist id={listId}>
+        {suggestions.map((city) => (
+          <option key={`${city.name}-${city.regionCode ?? ""}`} value={cityLabel(city)} />
+        ))}
+      </datalist>
+    </Field>
+  );
+
+  return (
+    <div className="grid gap-7 sm:grid-cols-2">
+      <Field
+        id={fid("country")}
+        label="Country"
+        hint="Where your main office is."
+        error={errors.country}
+      >
+        <select
+          id={fid("country")}
+          name="country"
+          required
+          value={country}
+          onChange={(event) => {
+            setCountry(event.currentTarget.value);
+            setRegion("");
+            setSuggestions([]);
+          }}
+          aria-invalid={errors.country ? true : undefined}
+          aria-describedby={describedBy(fid("country"), true, Boolean(errors.country))}
+          className={inputClass}
+        >
+          <option value="">Choose a country</option>
+          {countries.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      {regions ? (
+        <Field
+          key={`region-${country}`}
+          id={fid("region")}
+          label={regions.label}
+          hint={`Your main office's ${regions.label.toLowerCase()}.`}
+          error={errors.region}
+        >
+          <select
+            id={fid("region")}
+            name="region"
+            required
+            value={region}
+            onChange={(event) => setRegion(event.currentTarget.value)}
+            aria-invalid={errors.region ? true : undefined}
+            aria-describedby={describedBy(fid("region"), true, Boolean(errors.region))}
+            className={inputClass}
+          >
+            <option value="">Choose the {regions.label.toLowerCase()}</option>
+            {regions.options.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      ) : null}
+
+      {/* Same slot with or without a state list, so the typed city stays. */}
+      {cityField}
+    </div>
   );
 }

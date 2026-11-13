@@ -1,4 +1,5 @@
 import type { AgencySummary } from "@/lib/data";
+import { cityLabel } from "@/lib/regions";
 import { agencyPath } from "@/lib/routes";
 import { displaySpecialisms } from "@/lib/specialisms";
 import { AgencyCard, AgencyGrid, type AgencyGridProps } from "./AgencyCard";
@@ -8,7 +9,7 @@ export function agencyCardProps(agency: AgencySummary) {
   return {
     name: agency.name,
     href: agencyPath(agency.slug),
-    city: agency.city?.name ?? null,
+    city: agency.city ? cityLabel(agency.city) : null,
     country: agency.country.name,
     logoFile: agency.logoPath,
     // Generic specialisms are only shown when an agency has nothing else.

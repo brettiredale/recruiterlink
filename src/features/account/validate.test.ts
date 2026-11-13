@@ -108,3 +108,23 @@ test("images are recognised by their contents, not their names", () => {
   assert.equal(sniffImage(new TextEncoder().encode("<svg onload=alert(1)>")), null);
   assert.equal(sniffImage(new Uint8Array([])), null);
 });
+
+test("new listing: a country with states needs one of its own states", () => {
+  const choices = { 7: { label: "State", options: [{ id: 10, code: "FL", name: "Florida" }] } };
+  const base = { ...goodText, name: "Ruiz Talent", website: "ruiz-talent.com", country: "7", city: "Miami" };
+
+  const missing = validateNewListing(base, "ruiz-talent.com", choices);
+  assert.equal(missing.ok === false ? missing.errors.region : "", "Choose the state.");
+
+  const wrong = validateNewListing({ ...base, region: "99" }, "ruiz-talent.com", choices);
+  assert.equal(wrong.ok, false);
+
+  const good = validateNewListing({ ...base, region: "10" }, "ruiz-talent.com", choices);
+  assert.equal(good.ok, true);
+  assert.equal(good.value.regionId, 10);
+
+  // A country with no states ignores a stray region value.
+  const spain = validateNewListing({ ...base, country: "5", region: "10" }, "ruiz-talent.com", choices);
+  assert.equal(spain.ok, true);
+  assert.equal(spain.value.regionId, null);
+});

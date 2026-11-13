@@ -9,6 +9,7 @@ import { LinkPersonForm } from "@/features/account/SmallForms";
 import { Notice, SubmitButton, inputClass } from "@/features/account/ui";
 import { AdminLoading, AdminShell } from "@/features/admin/AdminShell";
 import { requireAdmin } from "@/features/admin/guard";
+import { cityLabel } from "@/lib/regions";
 import { adminSignInPath } from "@/lib/routes";
 import { toParagraphs } from "@/lib/text";
 
@@ -19,6 +20,11 @@ const NOTICES: Record<string, { tone: "success" | "error" | "info"; text: string
   rejected: { tone: "info", text: "Turned down. The agency has been emailed with your reason." },
   "already-listed": { tone: "error", text: "That website already has a published listing, so this one was not published." },
   "not-found": { tone: "error", text: "That listing is no longer waiting. It may already have been reviewed." },
+  "region-required": {
+    tone: "error",
+    text: "This city is not in the directory yet and the listing has no state, province or territory, so it was not published. Ask the agency to send it in again with one.",
+  },
+  "city-invalid": { tone: "error", text: "The city name cannot be used, so this listing was not published." },
   failed: { tone: "error", text: "That did not work. Please try again." },
 };
 
@@ -72,11 +78,23 @@ async function Review({ searchParams }: { searchParams: PageProps<"/admin/review
                 <div>
                   <dt className="text-[15px] text-muted">Location</dt>
                   <dd className="font-semibold">
-                    {submission.city_name}, {submission.country}
-                    {submission.city_exists ? null : (
+                    {submission.city_name}
+                    {submission.region && !submission.city_name.includes(",") ? `, ${submission.region}` : null}, {submission.country}
+                    {submission.matched_city ? (
+                      <span className="mt-1 block text-[15px] font-normal text-muted">
+                        Joins {cityLabel(submission.matched_city)}, which has{" "}
+                        {submission.matched_city.agency_count === 1
+                          ? "1 agency"
+                          : `${submission.matched_city.agency_count.toLocaleString("en")} agencies`}
+                        .
+                      </span>
+                    ) : (
                       <span className="mt-1 block text-[15px] font-normal text-pink-text">
-                        New city: publishing adds “{submission.city_name}” to the directory. Check
-                        the spelling.
+                        New city: publishing adds “{submission.city_name}
+                        {submission.region_code && !submission.city_name.includes(",")
+                          ? `, ${submission.region_code}`
+                          : ""}” to the
+                        directory. Check the spelling.
                       </span>
                     )}
                   </dd>

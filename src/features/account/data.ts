@@ -86,8 +86,19 @@ export type PendingSubmission = {
   introduction: string | null;
   description: string;
   specialisms: string[] | null;
+  /** The state, province or territory the agency chose, if any. */
+  region: string | null;
+  region_code: string | null;
   /** False when approving will add this city to the directory. */
   city_exists: boolean;
+  /** The existing city the listing joins on approval, from match_city. */
+  matched_city: {
+    id: number;
+    name: string;
+    slug: string;
+    region_code: string | null;
+    agency_count: number;
+  } | null;
 };
 
 /**

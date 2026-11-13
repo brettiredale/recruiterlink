@@ -18,12 +18,21 @@ export type CountryWithCounts = Country & {
   cityCount: number;
 };
 
+/** A state (US), province or territory (Canada) or state or territory (Australia). */
+export type Region = {
+  /** Postal code: "FL", "ON", "NSW". */
+  code: string;
+  name: string;
+};
+
 export type City = {
   id: number;
   name: string;
   slug: string;
   /** City photo file, when one exists. */
   photoPath: string | null;
+  /** Set for every US, Canadian and Australian city; null elsewhere. */
+  region: Region | null;
   country: Country;
 };
 
@@ -61,7 +70,7 @@ export type AgencySummary = {
   logoPath: string | null;
   plan: AgencyPlan;
   isClaimed: boolean;
-  city: { name: string; slug: string } | null;
+  city: { name: string; slug: string; regionCode: string | null } | null;
   country: { name: string; slug: string };
   specialisms: { name: string; slug: string }[];
 };

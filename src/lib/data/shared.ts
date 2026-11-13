@@ -39,7 +39,7 @@ export function unwrapOne<T>(
 /** Columns and related rows every agency card needs. */
 export const AGENCY_SUMMARY_COLUMNS = `
   id, name, slug, introduction, logo_path, plan, is_claimed,
-  city:cities(name, slug),
+  city:cities(name, slug, region:regions(code)),
   country:countries!inner(name, slug),
   agency_specialisms(specialism:specialisms(name, slug, sort_order))
 ` as const;
@@ -50,6 +50,7 @@ export const AGENCY_DETAIL_COLUMNS = `
 ` as const;
 
 type Place = { name: string; slug: string };
+type CityPlace = Place & { region: { code: string } | null };
 
 export type AgencySummaryRow = {
   id: string;
@@ -59,7 +60,7 @@ export type AgencySummaryRow = {
   logo_path: string | null;
   plan: string;
   is_claimed: boolean;
-  city: Place | null;
+  city: CityPlace | null;
   country: Place;
   agency_specialisms: {
     specialism: { name: string; slug: string; sort_order: number };
@@ -85,7 +86,9 @@ export function toAgencySummary(row: AgencySummaryRow): AgencySummary {
     logoPath: row.logo_path,
     plan: (row.plan === "premium" ? "premium" : "free") satisfies AgencyPlan,
     isClaimed: row.is_claimed,
-    city: row.city ? { name: row.city.name, slug: row.city.slug } : null,
+    city: row.city
+      ? { name: row.city.name, slug: row.city.slug, regionCode: row.city.region?.code ?? null }
+      : null,
     country: { name: row.country.name, slug: row.country.slug },
     specialisms: row.agency_specialisms
       .map((link) => link.specialism)

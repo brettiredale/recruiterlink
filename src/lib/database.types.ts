@@ -330,6 +330,7 @@ export type Database = {
           id: number
           name: string
           photo_path: string | null
+          region_id: number | null
           slug: string
         }
         Insert: {
@@ -338,6 +339,7 @@ export type Database = {
           id?: never
           name: string
           photo_path?: string | null
+          region_id?: number | null
           slug: string
         }
         Update: {
@@ -346,6 +348,7 @@ export type Database = {
           id?: never
           name?: string
           photo_path?: string | null
+          region_id?: number | null
           slug?: string
         }
         Relationships: [
@@ -362,6 +365,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "country_stats"
             referencedColumns: ["country_id"]
+          },
+          {
+            foreignKeyName: "cities_region_fkey"
+            columns: ["region_id", "country_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id", "country_id"]
+          },
+        ]
+      }
+      city_aliases: {
+        Row: {
+          alias_slug: string
+          city_id: number
+          country_id: number
+        }
+        Insert: {
+          alias_slug: string
+          city_id: number
+          country_id: number
+        }
+        Update: {
+          alias_slug?: string
+          city_id?: number
+          country_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_aliases_city_id_country_id_fkey"
+            columns: ["city_id", "country_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id", "country_id"]
           },
         ]
       }
@@ -436,6 +472,7 @@ export type Database = {
           id: string
           introduction: string | null
           name: string
+          region_id: number | null
           review_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -472,6 +509,7 @@ export type Database = {
           id?: string
           introduction?: string | null
           name?: string
+          region_id?: number | null
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -501,6 +539,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "country_stats"
             referencedColumns: ["country_id"]
+          },
+          {
+            foreignKeyName: "listing_submissions_region_fkey"
+            columns: ["region_id", "country_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id", "country_id"]
+          },
+        ]
+      }
+      regions: {
+        Row: {
+          code: string
+          country_id: number
+          id: number
+          name: string
+        }
+        Insert: {
+          code: string
+          country_id: number
+          id?: never
+          name: string
+        }
+        Update: {
+          code?: string
+          country_id?: number
+          id?: never
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regions_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -575,6 +649,8 @@ export type Database = {
           is_indexable: boolean | null
           name: string | null
           photo_path: string | null
+          region_code: string | null
+          region_name: string | null
           slug: string | null
         }
         Relationships: [
@@ -772,6 +848,18 @@ export type Database = {
         Args: { approve: boolean; request_id: string }
         Returns: undefined
       }
+      match_city: {
+        Args: { place: string; region?: string; target_country: number }
+        Returns: {
+          agency_count: number
+          city_id: number
+          matched_by: string
+          name: string
+          region_code: string
+          region_name: string
+          slug: string
+        }[]
+      }
       my_account: { Args: never; Returns: Json }
       my_listing: { Args: { target_agency: string }; Returns: Json }
       search_agencies: {
@@ -823,6 +911,7 @@ export type Database = {
           new_description: string
           new_introduction: string
           new_name: string
+          new_region_id?: number
           new_specialism_ids: number[]
           new_website: string
         }

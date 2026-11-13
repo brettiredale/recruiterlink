@@ -247,8 +247,12 @@ export function splitPlace(query: string): { text: string; place: string | null 
 }
 
 export type PlaceGuess = {
-  /** City slug to look for, when the guess includes a city. */
-  citySlug?: string;
+  /**
+   * The city as typed ("Miami FL", "Toronto, Ontario"), when the guess
+   * includes a city. The lookup matches it the way the database does, so a
+   * state or province in the text narrows it rather than breaking it.
+   */
+  city?: string;
   /** Country slug to look for, when the guess includes a country. */
   countrySlug?: string;
 };
@@ -260,8 +264,8 @@ function countrySlugFor(text: string): string {
 
 /**
  * The ways a place text could be read, most specific first:
- * "Madrid, Spain" as city + country; then the whole text as a country;
- * then the whole text as a city.
+ * "Miami, Florida, USA" as city "Miami, Florida" in the United States; then
+ * the whole text as a country; then the whole text as a city anywhere.
  */
 export function placeGuesses(place: string): PlaceGuess[] {
   const guesses: PlaceGuess[] = [];
@@ -270,14 +274,14 @@ export function placeGuesses(place: string): PlaceGuess[] {
     .map((part) => part.trim())
     .filter(Boolean);
   if (parts.length >= 2) {
-    const citySlug = slugifyText(parts[0]);
+    const city = parts.slice(0, -1).join(", ");
     const countrySlug = countrySlugFor(parts[parts.length - 1]);
-    if (citySlug && countrySlug) guesses.push({ citySlug, countrySlug });
+    if (slugifyText(city) && countrySlug) guesses.push({ city, countrySlug });
   }
   const whole = slugifyText(place);
   if (whole) {
     guesses.push({ countrySlug: COUNTRY_ALIASES[whole] ?? whole });
-    guesses.push({ citySlug: whole });
+    guesses.push({ city: parts.join(", ") });
   }
   return guesses;
 }
@@ -314,7 +318,8 @@ export function stripFillerWords(text: string): string {
 
 export type ResolvedPlace = {
   country: { slug: string; name: string };
-  city: { slug: string; name: string } | null;
+  /** regionCode is the state, province or territory ("FL"), where there is one. */
+  city: { slug: string; name: string; regionCode: string | null } | null;
 };
 
 /** How the search looks places up. The real one reads the database. */
@@ -322,13 +327,19 @@ export type PlaceLookup = {
   /** A country by slug, or null. */
   findCountry(slug: string): Promise<{ slug: string; name: string } | null>;
   /**
-   * The city with this slug (in the given country if one is named). When
-   * several countries have a city of that name, the one with most agencies.
+   * The city a typed place means (in the given country if one is named):
+   * "Miami", "Miami FL" and "Miami, Florida" are all Miami, FL. When several
+   * cities match, the one with most agencies. Only cities with agencies count.
    */
   findCity(
-    citySlug: string,
+    city: string,
     countrySlug?: string,
-  ): Promise<{ slug: string; name: string; country: { slug: string; name: string } } | null>;
+  ): Promise<{
+    slug: string;
+    name: string;
+    regionCode: string | null;
+    country: { slug: string; name: string };
+  } | null>;
 };
 
 /** Finds the real place a text refers to, or null. */
@@ -337,10 +348,13 @@ export async function resolvePlace(
   lookup: PlaceLookup,
 ): Promise<ResolvedPlace | null> {
   for (const guess of placeGuesses(place)) {
-    if (guess.citySlug) {
-      const city = await lookup.findCity(guess.citySlug, guess.countrySlug);
+    if (guess.city) {
+      const city = await lookup.findCity(guess.city, guess.countrySlug);
       if (city) {
-        return { country: city.country, city: { slug: city.slug, name: city.name } };
+        return {
+          country: city.country,
+          city: { slug: city.slug, name: city.name, regionCode: city.regionCode },
+        };
       }
     } else if (guess.countrySlug) {
       const country = await lookup.findCountry(guess.countrySlug);

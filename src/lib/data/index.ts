@@ -38,3 +38,4 @@ export {
   searchAgencies,
 } from "./agencies";
 export { getDirectoryTotals } from "./totals";
+export { listRegions, matchCity, suggestCities, type RegionOption, type CityMatch } from "./regions";

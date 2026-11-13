@@ -27,20 +27,23 @@ const us = { slug: "united-states", name: "United States" };
 const countries = [spain, uk, us];
 // Largest first, as the real lookup returns them.
 const cities = [
-  { slug: "madrid", name: "Madrid", country: spain },
-  { slug: "london", name: "London", country: uk },
-  { slug: "birmingham", name: "Birmingham", country: uk },
-  { slug: "birmingham", name: "Birmingham", country: us },
-  { slug: "new-york", name: "New York", country: us },
-  { slug: "malaga", name: "Málaga", country: spain },
-  { slug: "reading", name: "Reading", country: uk },
+  { slug: "madrid", name: "Madrid", regionCode: null, country: spain },
+  { slug: "london", name: "London", regionCode: null, country: uk },
+  { slug: "birmingham", name: "Birmingham", regionCode: null, country: uk },
+  { slug: "birmingham", name: "Birmingham", regionCode: "AL", country: us },
+  { slug: "new-york", name: "New York", regionCode: "NY", country: us },
+  { slug: "miami", name: "Miami", regionCode: "FL", country: us },
+  { slug: "malaga", name: "Málaga", regionCode: null, country: spain },
+  { slug: "reading", name: "Reading", regionCode: null, country: uk },
 ];
 
 const lookup: PlaceLookup = {
   async findCountry(slug) {
     return countries.find((country) => country.slug === slug) ?? null;
   },
-  async findCity(citySlug, countrySlug) {
+  // A stand-in for match_city: "Miami FL" and "Miami, Florida" drop the state.
+  async findCity(typed, countrySlug) {
+    const citySlug = slugifyText(typed.replace(/,?\s*(fl|florida|al|ny)$/i, ""));
     return (
       cities.find(
         (city) => city.slug === citySlug && (!countrySlug || city.country.slug === countrySlug),
@@ -77,14 +80,20 @@ test("the place is the text after the last ' in '", () => {
 
 test("a place can be read as city + country, country or city", () => {
   assert.deepEqual(placeGuesses("Birmingham, USA"), [
-    { citySlug: "birmingham", countrySlug: "united-states" },
+    { city: "Birmingham", countrySlug: "united-states" },
     { countrySlug: "birmingham-usa" },
-    { citySlug: "birmingham-usa" },
+    { city: "Birmingham, USA" },
   ]);
   assert.deepEqual(placeGuesses("the UK"), [
     { countrySlug: "united-kingdom" },
-    { citySlug: "the-uk" },
+    { city: "the UK" },
   ]);
+  // The state stays with the city, for the matcher to use.
+  assert.deepEqual(placeGuesses("Miami, Florida, USA")[0], {
+    city: "Miami, Florida",
+    countrySlug: "united-states",
+  });
+  assert.deepEqual(placeGuesses("Miami FL"), [{ countrySlug: "miami-fl" }, { city: "Miami FL" }]);
 });
 
 test("filler words are dropped", () => {
@@ -109,7 +118,7 @@ test("specialisms are recognised by name, slug or everyday word", () => {
 test("specialism + city", async () => {
   assert.deepEqual(await plan("IT recruiters in Madrid"), {
     query: "IT recruiters in Madrid",
-    place: { country: spain, city: { slug: "madrid", name: "Madrid" } },
+    place: { country: spain, city: { slug: "madrid", name: "Madrid", regionCode: null } },
     suggestedPlace: null,
     specialismSlug: "information-technology",
     keywords: "",
@@ -133,10 +142,17 @@ test("city, country picks the city in that country", async () => {
   assert.equal((await plan("recruiters in Birmingham, USA"))?.place?.country.slug, "united-states");
 });
 
+test("a state in the place finds the same city", async () => {
+  const miami = { slug: "miami", name: "Miami", regionCode: "FL" };
+  assert.deepEqual((await plan("recruiters in Miami, Florida")).place, { country: us, city: miami });
+  assert.deepEqual((await plan("recruiters in Miami FL")).place, { country: us, city: miami });
+  assert.deepEqual((await plan("IT recruiters in Miami, FL, USA")).place, { country: us, city: miami });
+});
+
 test("keywords that are not a specialism are searched as text within the place", async () => {
   assert.deepEqual(await plan("payroll specialists in London"), {
     query: "payroll specialists in London",
-    place: { country: uk, city: { slug: "london", name: "London" } },
+    place: { country: uk, city: { slug: "london", name: "London", regionCode: null } },
     suggestedPlace: null,
     specialismSlug: null,
     keywords: "payroll",
@@ -168,7 +184,7 @@ test("without ' in ', a place name is only suggested, never used as a filter", a
   assert.deepEqual(await plan("Reading"), {
     query: "Reading",
     place: null,
-    suggestedPlace: { country: uk, city: { slug: "reading", name: "Reading" } },
+    suggestedPlace: { country: uk, city: { slug: "reading", name: "Reading", regionCode: null } },
     specialismSlug: null,
     keywords: "Reading",
   });

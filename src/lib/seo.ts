@@ -111,6 +111,7 @@ function agencyAddress(agency: Pick<AgencySummary, "city" | "country">) {
   return {
     "@type": "PostalAddress",
     ...(agency.city ? { addressLocality: agency.city.name } : {}),
+    ...(agency.city?.regionCode ? { addressRegion: agency.city.regionCode } : {}),
     addressCountry: agency.country.name,
   };
 }

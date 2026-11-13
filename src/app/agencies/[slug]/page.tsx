@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cityLabel } from "@/lib/regions";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
@@ -50,7 +51,7 @@ async function loadAgency(slug: string) {
 
 function locationText(agency: { city: { name: string } | null; country: { name: string } }) {
   return agency.city && agency.city.name !== agency.country.name
-    ? `${agency.city.name}, ${agency.country.name}`
+    ? `${cityLabel(agency.city)}, ${agency.country.name}`
     : agency.country.name;
 }
 
@@ -113,7 +114,7 @@ export default async function AgencyPage({ params }: Props) {
             { label: "Home", href: "/" },
             { label: country.name, href: countryPath(country.slug) },
             ...(city && city.name !== country.name
-              ? [{ label: city.name, href: cityPath(country.slug, city.slug) }]
+              ? [{ label: cityLabel(city), href: cityPath(country.slug, city.slug) }]
               : []),
             { label: agency.name, href: agencyPath(agency.slug) },
           ]}
@@ -144,7 +145,7 @@ export default async function AgencyPage({ params }: Props) {
                       href={cityPath(country.slug, city.slug)}
                       className="text-navy underline underline-offset-4 hover:text-indigo-deep"
                     >
-                      {city.name}
+                      {cityLabel(city)}
                     </Link>
                     ,
                   </span>
@@ -251,10 +252,10 @@ export default async function AgencyPage({ params }: Props) {
           <Container>
             <SectionHeading
               id="related-heading"
-              title={`More recruitment agencies in ${city.name}`}
+              title={`More recruitment agencies in ${cityLabel(city)}`}
               size="sm"
               action={{
-                label: `All agencies in ${city.name}`,
+                label: `All agencies in ${cityLabel(city)}`,
                 href: cityPath(country.slug, city.slug),
               }}
             />

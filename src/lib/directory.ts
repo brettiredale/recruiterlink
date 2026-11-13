@@ -29,10 +29,13 @@ import {
   listSpecialismsForCity,
   listSpecialismsForCountry,
   listTopCities,
+  listRegions,
   listTopCityCountsForSpecialism,
   listTopCitySpecialismPairs,
+  matchCity,
   resolveLegacySlug,
   searchAgencies,
+  suggestCities,
   type AgencySummary,
   type CityWithStats,
   type CountryWithCounts,
@@ -180,7 +183,7 @@ export async function getSpecialismOverview(
 }
 
 export type PopularSearch = {
-  city: { name: string; slug: string; countrySlug: string };
+  city: { name: string; slug: string; countrySlug: string; regionCode: string | null };
   specialism: { name: string; slug: string };
   agencyCount: number;
 };
@@ -192,7 +195,14 @@ export type PopularSearch = {
  * `perCity` from one city so a single big city does not fill the list.
  */
 export async function getPopularSearches(
-  cities: { id: number; name: string; slug: string; countrySlug: string; agencyCount: number }[],
+  cities: {
+    id: number;
+    name: string;
+    slug: string;
+    regionCode: string | null;
+    countrySlug: string;
+    agencyCount: number;
+  }[],
   tag: string,
   limit: number,
   perCity: number,
@@ -219,7 +229,12 @@ export async function getPopularSearches(
     if (count >= perCity) continue;
     used.set(city.id, count + 1);
     out.push({
-      city: { name: city.name, slug: city.slug, countrySlug: city.countrySlug },
+      city: {
+        name: city.name,
+        slug: city.slug,
+        countrySlug: city.countrySlug,
+        regionCode: city.regionCode,
+      },
       specialism: { name: pair.specialism.name, slug: pair.specialism.slug },
       agencyCount: pair.agencyCount,
     });
@@ -260,6 +275,30 @@ export async function getCitiesBySlug(citySlug: string, countrySlug?: string) {
   cacheLife("days");
   cacheTag(DIRECTORY_TAG, COUNTRIES_TAG);
   return findCitiesBySlug(citySlug, countrySlug);
+}
+
+/** States, provinces and territories (US, Canada, Australia). They rarely change. */
+export async function getRegions() {
+  "use cache";
+  cacheLife("weeks");
+  cacheTag(DIRECTORY_TAG, COUNTRIES_TAG);
+  return listRegions();
+}
+
+/** The existing cities a typed place means, most likely first (search). */
+export async function getCityMatches(countryId: number, place: string, region?: string) {
+  "use cache";
+  cacheLife("days");
+  cacheTag(DIRECTORY_TAG, COUNTRIES_TAG);
+  return matchCity(countryId, place, region);
+}
+
+/** City suggestions for the listing form's city field. */
+export async function getCitySuggestions(countryId: number, typed: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(DIRECTORY_TAG, COUNTRIES_TAG);
+  return suggestCities(countryId, typed);
 }
 
 /** Search results. Short-lived: the same search is often repeated. */

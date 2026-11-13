@@ -4,6 +4,8 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendEmail } from "@/lib/email/send";
 import { hasSupabaseSecretKey } from "@/lib/env";
+import { getCountries, getRegions } from "@/lib/directory";
+import { buildRegionChoices } from "@/lib/regions";
 import { revalidateDirectory } from "@/lib/revalidate";
 import {
   accountListingPath,
@@ -443,6 +445,7 @@ const SUBMIT_MESSAGES: Record<string, string> = {
   rate_limited: "You have sent in several listings today. Please try again tomorrow.",
   personal_email: "A personal email address cannot add a listing. Sign in with your work email address.",
   domain_mismatch: "The website must be on the same domain as the email address you signed in with.",
+  region_invalid: "Choose the state, province or territory again.",
 };
 
 /** Sends a new listing for review. */
@@ -451,6 +454,7 @@ export async function submitNewListing(_previous: NewListingState, formData: For
     name: cleanLine(formData.get("name")),
     website: cleanLine(formData.get("website")),
     country: cleanLine(formData.get("country")),
+    region: cleanLine(formData.get("region")),
     city: cleanLine(formData.get("city")),
     introduction: cleanText(formData.get("introduction")),
     description: cleanText(formData.get("description")),
@@ -460,20 +464,24 @@ export async function submitNewListing(_previous: NewListingState, formData: For
   const account = await getAccount();
   if (!account) redirect(signInPath);
 
+  const [countries, regions] = await Promise.all([getCountries(), getRegions()]);
   const result = validateNewListing(
     {
       name: formData.get("name"),
       website: formData.get("website"),
       country: formData.get("country"),
+      region: formData.get("region"),
       city: formData.get("city"),
       introduction: formData.get("introduction"),
       description: formData.get("description"),
       specialisms: formData.getAll("specialisms"),
     },
     account.domain,
+    buildRegionChoices(countries, regions),
   );
   if (!result.ok) return { status: "error", at: Date.now(), errors: result.errors, values };
   const listing = result.value;
+  const region = regions.find((r) => r.id === listing.regionId) ?? null;
 
   try {
     const supabase = await getSupabaseSessionClient();
@@ -485,6 +493,7 @@ export async function submitNewListing(_previous: NewListingState, formData: For
       new_introduction: listing.introduction,
       new_description: listing.description,
       new_specialism_ids: listing.specialismIds,
+      ...(listing.regionId ? { new_region_id: listing.regionId } : {}),
     });
     if (error) {
       const known = SUBMIT_MESSAGES[error.hint ?? ""];
@@ -496,7 +505,7 @@ export async function submitNewListing(_previous: NewListingState, formData: For
       name: listing.name,
       website: `https://${account.domain}`,
       email: account.email,
-      city: listing.city,
+      city: region && !listing.city.includes(",") ? `${listing.city}, ${region.code}` : listing.city,
       description: listing.description,
       reviewUrl: `${await linkOrigin()}${reviewPath}`,
     });
@@ -594,7 +603,15 @@ export async function reviewSubmission(formData: FormData): Promise<void> {
     const { data, error } = await supabase.rpc("admin_approve_submission", { submission_id: submissionId });
     if (error) {
       console.error("admin_approve_submission failed:", error.code, error.message);
-      redirect(`${reviewPath}?notice=${error.hint === "already_listed" ? "already-listed" : "failed"}`);
+      const notice =
+        error.hint === "already_listed"
+          ? "already-listed"
+          : error.hint === "region_required"
+            ? "region-required"
+            : error.hint === "city_invalid"
+              ? "city-invalid"
+              : "failed";
+      redirect(`${reviewPath}?notice=${notice}`);
     }
     slug = data;
     // A new agency changes its city, its country, the totals and the sitemaps.

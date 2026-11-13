@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cityLabel } from "@/lib/regions";
 import Link from "next/link";
 import {
   Breadcrumbs,
@@ -114,7 +115,7 @@ export default async function CountriesPage() {
                   <CompactLinks
                     className="!grid-cols-1"
                     links={cities.slice(0, CITIES_PER_COUNTRY).map((city) => ({
-                      label: city.name,
+                      label: cityLabel(city),
                       href: cityPath(country.slug, city.slug),
                       count: city.agencyCount,
                     }))}

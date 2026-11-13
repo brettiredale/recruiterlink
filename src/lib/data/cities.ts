@@ -3,7 +3,7 @@ import { unwrapMaybe, unwrapRows } from "./shared";
 import type { CityWithStats } from "./types";
 
 const COLUMNS =
-  "city_id, name, slug, photo_path, country_id, country_name, country_slug, country_iso2, agency_count, is_indexable";
+  "city_id, name, slug, photo_path, country_id, country_name, country_slug, country_iso2, agency_count, is_indexable, region_code, region_name";
 
 type Row = {
   city_id: number | null;
@@ -16,6 +16,8 @@ type Row = {
   country_iso2: string | null;
   agency_count: number | null;
   is_indexable: boolean | null;
+  region_code: string | null;
+  region_name: string | null;
 };
 
 function toCity(row: Row): CityWithStats {
@@ -24,6 +26,8 @@ function toCity(row: Row): CityWithStats {
     name: row.name!,
     slug: row.slug!,
     photoPath: row.photo_path,
+    region:
+      row.region_code && row.region_name ? { code: row.region_code, name: row.region_name } : null,
     country: {
       id: row.country_id!,
       name: row.country_name!,
@@ -129,17 +133,28 @@ export async function findCitiesBySlug(
   citySlug: string,
   countrySlug?: string,
 ): Promise<CityWithStats[]> {
-  let query = getSupabaseServerClient()
+  const client = getSupabaseServerClient();
+  let query = client
     .from("city_stats")
     .select(COLUMNS)
     .eq("slug", citySlug)
     .gt("agency_count", 0);
   if (countrySlug) query = query.eq("country_slug", countrySlug);
-  const rows = unwrapRows(
-    await query.order("agency_count", { ascending: false }).order("country_slug").limit(20),
-    "cities by name",
+  // Old addresses and other spellings ("miami" for Miami, FL) count too.
+  const [rows, aliases] = await Promise.all([
+    query.order("agency_count", { ascending: false }).order("country_slug").limit(20),
+    client.from("city_aliases").select("city_id").eq("alias_slug", citySlug).limit(20),
+  ]);
+  const direct = unwrapRows(rows, "cities by name").map(toCity);
+  const aliasIds = unwrapRows(aliases, "city aliases")
+    .map((row) => row.city_id)
+    .filter((id) => !direct.some((city) => city.id === id));
+  const viaAlias = (await getCitiesByIds(aliasIds)).filter(
+    (city) => city.agencyCount > 0 && (!countrySlug || city.country.slug === countrySlug),
   );
-  return rows.map(toCity);
+  return [...direct, ...viaAlias].sort(
+    (a, b) => b.agencyCount - a.agencyCount || a.country.slug.localeCompare(b.country.slug),
+  );
 }
 
 /** Cities by id, with their live stats (in no particular order). */

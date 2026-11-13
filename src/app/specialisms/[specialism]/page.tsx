@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cityLabel } from "@/lib/regions";
 import { notFound } from "next/navigation";
 import {
   Breadcrumbs,
@@ -109,7 +110,7 @@ export default async function SpecialismPage({ params }: Props) {
             question: `Which cities have the most ${phrase}?`,
             answer: `${sentenceList(
               topCities.map(
-                (city) => `${city.name} (${city.specialismAgencyCount.toLocaleString("en")})`,
+                (city) => `${cityLabel(city)} (${city.specialismAgencyCount.toLocaleString("en")})`,
               ),
             )} have the most in our directory.`,
           },
@@ -156,8 +157,8 @@ export default async function SpecialismPage({ params }: Props) {
               {cities.map((city) => (
                 <PopularSearchLink
                   key={city.id}
-                  label={`${specialismInPlaceHeading(specialism, city.name)}${
-                    city.name === city.country.name ? "" : `, ${city.country.name}`
+                  label={`${specialismInPlaceHeading(specialism, cityLabel(city))}${
+                    city.region || city.name === city.country.name ? "" : `, ${city.country.name}`
                   }`}
                   count={city.specialismAgencyCount}
                   href={citySpecialismPath(city.country.slug, city.slug, specialism.slug)}

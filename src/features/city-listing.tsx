@@ -3,8 +3,10 @@
  * pages (`/page/N`). One loader and one layout serve all four routes so
  * they cannot drift apart.
  */
+import { cityLabel } from "@/lib/regions";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { permanentRedirect } from "next/navigation";
 import {
   AgencyList,
   Breadcrumbs,
@@ -24,6 +26,7 @@ import {
   SpecialismChip,
 } from "@/components";
 import {
+  getCitiesBySlug,
   getCity,
   getCityAgencies,
   getCitySpecialisms,
@@ -85,7 +88,18 @@ export async function loadCityListing(params: CityListingParams) {
   }
 
   const city = await getCity(params.country, params.city);
-  if (!city || city.agencyCount === 0) return null;
+  if (!city) {
+    // An old address of a city ("miami" before "miami-fl") moves for good.
+    const [moved] = await getCitiesBySlug(params.city, params.country);
+    if (moved && moved.slug !== params.city) {
+      const base = params.specialism
+        ? citySpecialismPath(moved.country.slug, moved.slug, params.specialism)
+        : cityPath(moved.country.slug, moved.slug);
+      permanentRedirect(pagedPath(base, params.page));
+    }
+    return null;
+  }
+  if (city.agencyCount === 0) return null;
   const cityKey = { id: city.id, slug: city.slug, countrySlug: city.country.slug };
 
   const specialisms = await getCitySpecialisms(cityKey);
@@ -138,8 +152,8 @@ export type CityListing = NonNullable<Awaited<ReturnType<typeof loadCityListing>
 
 function listingHeading(listing: CityListing): string {
   return listing.specialism
-    ? specialismInPlaceHeading(listing.specialism, listing.city.name)
-    : `Recruitment agencies in ${listing.city.name}`;
+    ? specialismInPlaceHeading(listing.specialism, cityLabel(listing.city))
+    : `Recruitment agencies in ${cityLabel(listing.city)}`;
 }
 
 export function cityListingMetadata(listing: CityListing | null): Metadata {
@@ -152,13 +166,13 @@ export function cityListingMetadata(listing: CityListing | null): Metadata {
     .map((item) => specialismLabel(item));
 
   const description = specialism
-    ? `Compare ${agencies.total.toLocaleString("en")} ${specialismAgenciesPhrase(specialism)} in ${city.name}, ${city.country.name}. See what each agency does and go straight to its website.${pageNote}`
-    : `Browse ${agencies.total.toLocaleString("en")} ${agencies.total === 1 ? "recruitment agency" : "recruitment agencies"} in ${city.name}, ${city.country.name}${
+    ? `Compare ${agencies.total.toLocaleString("en")} ${specialismAgenciesPhrase(specialism)} in ${cityLabel(city)}, ${city.country.name}. See what each agency does and go straight to its website.${pageNote}`
+    : `Browse ${agencies.total.toLocaleString("en")} ${agencies.total === 1 ? "recruitment agency" : "recruitment agencies"} in ${cityLabel(city)}, ${city.country.name}${
         top.length >= 2 ? `, including specialists in ${top.join(", ")}` : ""
       }. Filter by specialism and go straight to each agency's website.${pageNote}`;
 
   return pageMetadata({
-    title: `${heading}${city.name === city.country.name ? "" : `, ${city.country.name}`}${page > 1 ? `: page ${page}` : ""}`,
+    title: `${heading}${city.region || city.name === city.country.name ? "" : `, ${city.country.name}`}${page > 1 ? `: page ${page}` : ""}`,
     description,
     path: listing.path,
     indexable: listing.indexable,
@@ -185,14 +199,14 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
       ? []
       : specialism
         ? citySpecialismFaqs({
-            city: city.name,
+            city: cityLabel(city),
             country: country.name,
             specialism,
             pairAgencyCount: specialism.agencyCount,
             cityAgencyCount: city.agencyCount,
           })
         : cityFaqs({
-            city: city.name,
+            city: cityLabel(city),
             country: country.name,
             agencyCount: city.agencyCount,
             rankInCountry: listing.rankInCountry,
@@ -201,7 +215,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
 
   const listTitle = specialism
     ? `${heading}${page > 1 ? `, page ${page}` : ""}`
-    : `All recruitment agencies in ${city.name}${page > 1 ? `, page ${page}` : ""}`;
+    : `All recruitment agencies in ${cityLabel(city)}${page > 1 ? `, page ${page}` : ""}`;
 
   return (
     <>
@@ -211,7 +225,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
           items={[
             { label: "Home", href: "/" },
             { label: country.name, href: countryPath(country.slug) },
-            { label: city.name, href: cityHref },
+            { label: cityLabel(city), href: cityHref },
             ...(specialism ? [{ label: specialism.name, href: basePath }] : []),
           ]}
           className="pb-1"
@@ -220,21 +234,21 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
           title={heading}
           eyebrow={
             specialism
-              ? `${agencyCountLabel(specialism.agencyCount)} · ${city.name === country.name ? country.name : `${city.name}, ${country.name}`}`
+              ? `${agencyCountLabel(specialism.agencyCount)} · ${city.name === country.name ? country.name : `${cityLabel(city)}, ${country.name}`}`
               : `${agencyCountLabel(city.agencyCount)} · ${country.name}`
           }
           intro={
             specialism
-              ? `Every agency we list in ${city.name} that gives ${specialismLabel(specialism)} as a specialism, whether you are hiring or looking for your next job.`
+              ? `Every agency we list in ${cityLabel(city)} that gives ${specialismLabel(specialism)} as a specialism, whether you are hiring or looking for your next job.`
               : city.agencyCount === 1
-                ? `The recruitment agency we list in ${city.name}, whether you are hiring or looking for your next job.`
-                : `Every recruitment agency we list in ${city.name}, whether you are hiring or looking for your next job.`
+                ? `The recruitment agency we list in ${cityLabel(city)}, whether you are hiring or looking for your next job.`
+                : `Every recruitment agency we list in ${cityLabel(city)}, whether you are hiring or looking for your next job.`
           }
           photo={
             city.photoPath
               ? {
                   src: CITY_PHOTO_BASE + encodeURIComponent(city.photoPath),
-                  alt: `${city.name}, ${country.name}`,
+                  alt: `${cityLabel(city)}, ${country.name}`,
                 }
               : null
           }
@@ -246,9 +260,9 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
         <Container className="flex flex-col gap-[22px]">
           <SearchBox
             variant="compact"
-            placeholder={`Web design recruiters in ${city.name}`}
-            label={`Describe the agency you are looking for in ${city.name}`}
-            formLabel={`Search agencies in ${city.name}`}
+            placeholder={`Web design recruiters in ${cityLabel(city)}`}
+            label={`Describe the agency you are looking for in ${cityLabel(city)}`}
+            formLabel={`Search agencies in ${cityLabel(city)}`}
             hiddenFields={{ country: country.slug, city: city.slug }}
           />
 
@@ -322,7 +336,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
           ) : (
             <EmptyState
               title="No agencies to show"
-              action={{ label: `All agencies in ${city.name}`, href: cityHref }}
+              action={{ label: `All agencies in ${cityLabel(city)}`, href: cityHref }}
             />
           )}
         </Container>
@@ -334,7 +348,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
             <div className="rounded-panel bg-lavender px-5 pt-12 pb-11 sm:px-10 lg:px-14">
               <SectionHeading
                 id="specialisms-heading"
-                title={`${city.name} recruitment agencies by specialism`}
+                title={`${cityLabel(city)} recruitment agencies by specialism`}
                 description="Each of these has a page of its own."
                 size="sm"
                 className="!mb-[22px]"
@@ -344,7 +358,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
                   <PopularSearchLink
                     key={item.id}
                     tone="panel"
-                    label={specialismInPlaceHeading(item, city.name)}
+                    label={specialismInPlaceHeading(item, cityLabel(city))}
                     count={item.agencyCount}
                     href={citySpecialismPath(country.slug, city.slug, item.slug)}
                     className={specialism?.id === item.id ? "!font-extrabold" : undefined}
@@ -357,7 +371,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
                     href={cityHref}
                     className="text-indigo-deep underline underline-offset-4 hover:text-navy"
                   >
-                    All {agencyCountLabel(city.agencyCount)} in {city.name}
+                    All {agencyCountLabel(city.agencyCount)} in {cityLabel(city)}
                   </Link>
                   <Link
                     href={specialismPath(specialism.slug)}
@@ -384,7 +398,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
               {otherCities.map((other) => (
                 <CityPillLink
                   key={other.id}
-                  name={other.name}
+                  name={cityLabel(other)}
                   count={other.agencyCount}
                   href={cityPath(country.slug, other.slug)}
                 />
@@ -423,7 +437,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
         <Container>
           <PricingBanner
             variant="compact"
-            heading={`Run a recruitment agency in ${city.name}?`}
+            heading={`Run a recruitment agency in ${cityLabel(city)}?`}
             freeHref={forAgenciesPath}
           />
         </Container>

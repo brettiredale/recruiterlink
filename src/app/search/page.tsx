@@ -18,12 +18,15 @@ import {
   getCitiesBySlug,
   getCity,
   getCityAgencies,
+  getCityMatches,
   getCountries,
   getCountry,
   getCountryAgencies,
+  getRegions,
   getSearchResults,
   getSpecialisms,
 } from "@/lib/directory";
+import { cityLabel } from "@/lib/regions";
 import {
   AGENCIES_PER_PAGE,
   cityPath,
@@ -39,6 +42,7 @@ import {
   planSearch,
   type PlaceLookup,
   type ResolvedPlace,
+  slugifyText,
 } from "@/lib/search-query";
 import { pageMetadata } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
@@ -64,6 +68,32 @@ function first(value: Params[string]): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+type FoundCity = Awaited<ReturnType<PlaceLookup["findCity"]>>;
+
+/** Cities named by a typed place in one country, through the shared matcher. */
+async function matchIn(
+  country: { id: number; slug: string; name: string },
+  typed: string,
+): Promise<(NonNullable<FoundCity> & { agencyCount: number }) | null> {
+  const matches = await getCityMatches(country.id, typed);
+  const city = matches.find((match) => match.agencyCount > 0);
+  return city
+    ? {
+        slug: city.slug,
+        name: city.name,
+        regionCode: city.regionCode,
+        agencyCount: city.agencyCount,
+        country: { slug: country.slug, name: country.name },
+      }
+    : null;
+}
+
+function withoutCount(
+  city: NonNullable<FoundCity> & { agencyCount: number },
+): NonNullable<FoundCity> {
+  return { slug: city.slug, name: city.name, regionCode: city.regionCode, country: city.country };
+}
+
 const lookup: PlaceLookup = {
   async findCountry(slug) {
     if (!isValidSlug(slug)) return null;
@@ -72,16 +102,40 @@ const lookup: PlaceLookup = {
       ? { slug: country.slug, name: country.name }
       : null;
   },
-  async findCity(citySlug, countrySlug) {
-    if (!isValidSlug(citySlug) || (countrySlug && !isValidSlug(countrySlug))) return null;
-    const [city] = await getCitiesBySlug(citySlug, countrySlug);
-    return city
-      ? {
-          slug: city.slug,
-          name: city.name,
-          country: { slug: city.country.slug, name: city.country.name },
-        }
-      : null;
+  async findCity(typed, countrySlug) {
+    if (countrySlug) {
+      if (!isValidSlug(countrySlug)) return null;
+      const country = await getCountry(countrySlug);
+      if (!country) return null;
+      const found = await matchIn(country, typed);
+      return found ? withoutCount(found) : null;
+    }
+    // No country named: the city with this name anywhere, and in the
+    // countries whose cities have a state ("Miami FL" only means something
+    // there). The one with most agencies wins.
+    const slug = slugifyText(typed);
+    const [countries, regions] = await Promise.all([getCountries(), getRegions()]);
+    const regionCountryIds = new Set(regions.map((region) => region.countryId));
+    const [bySlug, ...byMatch] = await Promise.all([
+      isValidSlug(slug) ? getCitiesBySlug(slug) : Promise.resolve([]),
+      ...countries
+        .filter((country) => regionCountryIds.has(country.id))
+        .map((country) => matchIn(country, typed)),
+    ]);
+    const candidates = [
+      ...bySlug.map((city) => ({
+        slug: city.slug,
+        name: city.name,
+        regionCode: city.region?.code ?? null,
+        agencyCount: city.agencyCount,
+        country: { slug: city.country.slug, name: city.country.name },
+      })),
+      ...byMatch.filter((city) => city !== null),
+    ];
+    if (candidates.length === 0) return null;
+    return withoutCount(
+      candidates.reduce((a, b) => (b.agencyCount > a.agencyCount ? b : a)),
+    );
   },
 };
 
@@ -93,18 +147,23 @@ async function scopePlace(params: Params): Promise<ResolvedPlace | null> {
   const country = await lookup.findCountry(countrySlug);
   if (!country) return null;
   if (citySlug && isValidSlug(citySlug)) {
-    const city = await lookup.findCity(citySlug, countrySlug);
-    if (city) return { country, city: { slug: city.slug, name: city.name } };
+    const city = await getCity(countrySlug, citySlug);
+    if (city && city.agencyCount > 0) {
+      return {
+        country,
+        city: { slug: city.slug, name: city.name, regionCode: city.region?.code ?? null },
+      };
+    }
   }
   return { country, city: null };
 }
 
 function placeName(place: ResolvedPlace): string {
-  return place.city
-    ? place.city.name === place.country.name
-      ? place.city.name
-      : `${place.city.name}, ${place.country.name}`
-    : place.country.name;
+  if (!place.city) return place.country.name;
+  if (place.city.regionCode) return cityLabel(place.city);
+  return place.city.name === place.country.name
+    ? place.city.name
+    : `${place.city.name}, ${place.country.name}`;
 }
 
 function placePath(place: ResolvedPlace): string {

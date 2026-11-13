@@ -7,6 +7,7 @@
  * country (or the worldwide version, `countrySlug` null). The page picks
  * which one to show; see `src/app/page.tsx`.
  */
+import { cityLabel } from "@/lib/regions";
 import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import {
@@ -87,6 +88,7 @@ async function loadHomeDirectory(countrySlug: string | null) {
         id: city.id,
         name: city.name,
         slug: city.slug,
+        regionCode: city.region?.code ?? null,
         countrySlug: country.slug,
         agencyCount: city.agencyCount,
       })),
@@ -117,6 +119,7 @@ async function loadHomeDirectory(countrySlug: string | null) {
       id: city.id,
       name: city.name,
       slug: city.slug,
+      regionCode: city.region?.code ?? null,
       countrySlug: city.country.slug,
       agencyCount: city.agencyCount,
     })),
@@ -222,7 +225,7 @@ export async function HomeDirectory({ countrySlug }: { countrySlug: string | nul
               <FeaturedAgencyCard
                 name={lead.name}
                 href={agencyCardProps(lead).href}
-                city={lead.city?.name}
+                city={lead.city ? cityLabel(lead.city) : undefined}
                 country={lead.country.name}
                 logoFile={lead.logoPath}
                 summary={firstSentence(lead.introduction, 170) || null}
@@ -270,7 +273,7 @@ export async function HomeDirectory({ countrySlug }: { countrySlug: string | nul
             {data.cities.map((city) => (
               <CityPillLink
                 key={city.id}
-                name={city.name}
+                name={cityLabel(city)}
                 count={city.agencyCount}
                 href={cityPath(city.country.slug, city.slug)}
               />
@@ -329,7 +332,7 @@ export async function HomeDirectory({ countrySlug }: { countrySlug: string | nul
               {data.searches.map((search) => (
                 <PopularSearchLink
                   key={`${search.city.countrySlug}/${search.city.slug}/${search.specialism.slug}`}
-                  label={specialismInPlaceHeading(search.specialism, search.city.name)}
+                  label={specialismInPlaceHeading(search.specialism, cityLabel(search.city))}
                   href={citySpecialismPath(
                     search.city.countrySlug,
                     search.city.slug,
