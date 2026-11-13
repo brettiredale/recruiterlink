@@ -76,6 +76,9 @@ external bot through a connector.
 - Premium listing price: $49 USD a month or $490 USD a year. Free listing is
   a card plus a detailed page. Premium adds images, video, team and
   leadership profiles, customer testimonials.
+- Premium limits (owner approved 13 Nov 2026): 8 images, 1 video as a
+  YouTube or Vimeo link (no video uploads), 12 team profiles,
+  6 testimonials.
 
 ## Search engine structure (agreed approach)
 
