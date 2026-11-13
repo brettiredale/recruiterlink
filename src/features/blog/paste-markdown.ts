@@ -109,3 +109,19 @@ export function htmlToMarkdown(html: string): string {
 export function isRichPaste(html: string): boolean {
   return /<(h[1-6]|p|ul|ol|li|blockquote|a|b|strong|img)\b/i.test(html);
 }
+
+// True when the paste holds whole paragraphs, headings, lists and the like,
+// so it should sit on its own lines. A few words copied from inside a
+// sentence carry no block tags and stay inline at the cursor.
+export function isBlockPaste(html: string, markdown: string): boolean {
+  return /<(p|h[1-6]|ul|ol|li|blockquote|pre|table)\b/i.test(html) || markdown.includes("\n\n");
+}
+
+// The line breaks to add before and after a block pasted between `before`
+// and `after`, so it is separated from the text around it by one blank
+// line, without adding blank lines where there already are some.
+export function blockPadding(before: string, after: string): [string, string] {
+  const lead = before === "" || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+  const trail = after === "" || after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+  return [lead, trail];
+}
