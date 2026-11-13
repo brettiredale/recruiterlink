@@ -279,7 +279,7 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 - Needs `SUPABASE_SECRET_KEY` in Vercel (Production and Preview). Without it sign-in says it is not switched on. The secret key is used only in `src/lib/supabase/admin.ts` for sign-in codes, logo files, blog image files and (later) payments, always after the caller has been confirmed (the session client for people, the database's key check for the blog API).
 - Sessions: `@supabase/ssr` cookies. `src/proxy.ts` runs only for `/account*` and `/admin*`, renews the session and sends signed-out visitors to sign-in. `getSupabaseSessionClient()` (`src/lib/supabase/session.ts`) acts as the signed-in person. Account pages are noindex, disallowed in robots.txt and never cached.
 - Claiming: a listing belongs to whoever confirms an email address on the same domain as the listing's website (`agencies.domain`, exact match). If exactly one unmanaged listing is on the domain it is claimed at sign-in; otherwise the account page lists the matches to choose from. If a colleague already manages it, a request goes to the owners to approve. Personal addresses (Gmail and similar; list in `private.personal_email_domains`) can sign in but claim nothing: they send their agency's details and a site admin links them by hand.
-- New agencies (domain not listed): a form at `/account/new-listing`; the website must be on the email's domain; stored in `public.listing_submissions` and held until the site admin publishes it at `/admin/review` (which creates the city if new, the agency and the ownership, then refreshes every page). The sign-in code is 8 digits (the Supabase project setting). The Firecrawl/AI auto-fill from the agency's website is not built (no keys yet).
+- New agencies (domain not listed): a form at `/account/new-listing`; the website must be on the email's domain; stored in `public.listing_submissions` and held until the site admin publishes it at `/admin/review` (which creates the city if new, the agency and the ownership, then refreshes every page). The sign-in code is 8 digits (the Supabase project setting). The Firecrawl/AI auto-fill from the agency's website is not built yet; its keys are in Vercel (see "AI service").
 - Admin (owner's instruction 13 Nov 2026, to match the Brainy sites): everything for running the site is under `/admin`, open only to `brettiredale@gmail.com` (the one row in `private.site_admins`; `brett@recruiterlink.com` was removed and is now an ordinary account that still manages `the-recruiter-link` and still gets the form notification emails). Signed-out visitors to any `/admin` page go to `/admin/sign-in` (same 8-digit code sign-in, worded for the admin, `next=admin` carried through the code and the email's button so it returns to `/admin`); anyone signed in with another address sees "not the administrator's account" and a sign-out. `requireAdmin()` in `src/features/admin/guard.ts` guards every admin page; every `admin_*` database function checks again. The listing review page is `/admin/review`; `/account/review` redirects there (older emails link to it).
 - Editing: introduction (300), description (80 to 4,000), up to 8 specialisms, and the logo (PNG/JPEG/WebP up to 1 MB, checked by content, stored as `<agency id>-<timestamp>.<ext>` in `agency-logos`). Name, website and location are changed by the team only. About 1,050 old listings carry more than 8 specialisms and must untick some to save.
 - Database: tables `agency_members`, `agency_access_requests`, `listing_submissions` (people read only their own rows; nobody writes directly). Every change goes through functions that take the caller from the session: `my_account`, `my_listing`, `claim_listing`, `claim_single_match`, `decide_access_request`, `update_my_listing`, `submit_new_listing`, `admin_*`; and for the server's secret key only: `allow_login_email`, `allow_code_attempt`, `set_agency_logo`, `agency_owner_emails`. The Supabase security advisor warns that signed-in users can run these; that is intended, each checks the caller itself.
@@ -304,3 +304,26 @@ The owner asked for a blog in the same format, structure and design as the Brain
 - Caching: blog readers are `"use cache"` tagged `blog`; every write calls `refreshBlog()` (`revalidateTag("blog", { expire: 0 })`) so changes show at once. `getSupabaseServerClient()` now fetches with `cache: "no-store"`: without it the framework also kept raw database answers for 15 minutes under no tag, so a page rebuilt straight after a change could be rebuilt from the old answer and stored again (found while testing; it affected directory pages too).
 - Tested 13 Nov 2026 on a local production build against the live database with a temporary key (deleted afterwards, with all test posts): every MCP tool and REST call including errors (bad/revoked key, rate limit, short article, duplicate slug, http cover, wrong confirm), slug redirect, draft hidden, unpublish, immediate refresh of post/list/home, sitemap, llms.txt, phone and desktop layouts; the editor in a real browser on a temporary page (typing, toolbar, every pop-up, Google Docs paste, preview, validation, signed-out save keeps the text). Database rules tested with pretend users in rolled-back runs. Not testable from Claude's sandbox: storing image files (needs the secret key, only on Vercel) and signing in to the admin pages (the code goes to the owner's inbox). Check both on the Vercel preview.
 
+
+## AI service (owner's choice 13 Nov 2026)
+
+- The owner chose OpenAI, not Anthropic, for every AI feature here (listing auto-fill, the Firecrawl content refresh, the AI part of search). In their words: "I prefer to use OpenAI where possible." Use a small, low-cost OpenAI model. There is no `ANTHROPIC_API_KEY` and none is wanted.
+- Keys in Vercel project `recruiterlink` (added by the owner 13 Nov 2026, each its own `RecruiterLink` key, Sensitive, Production and Preview): `FIRECRAWL_API_KEY`, `OPENAI_API_KEY`. The OpenAI key sits in its own OpenAI project with a monthly budget limit.
+
+## Open questions from the cloud handover (13 Nov 2026)
+
+Carried over from `HANDOVER-open-questions.md` on branch `handover-open-questions`. Take the owner through them one at a time and update this list.
+
+1. Premium limits: ANSWERED (see Design direction).
+2. Firecrawl and AI keys: ANSWERED (see AI service).
+3. Stripe keys in Vercel, for when Premium payments are built.
+4. Delete the 3 test rows in `public.listing_requests` (email `claude-form-test@example.com`)?
+5. Last 18 city photos: about $4 of fal.ai credit. Top up, or leave them?
+6. Logo pink `#EE1E80` and button pink differ slightly. Match them, or leave?
+7. The social sharing image still shows the old text logo. Switch to the new logo?
+8. Check: a visit to recruiterlink.com shows in Plausible.
+9. Check: sign in at recruiterlink.com/account/sign-in on the live site.
+10. Check: does the contact form confirmation land in the inbox or junk?
+11. Check: has Search Console read the 8 smaller sitemaps?
+12. A separate test database (testing touches live data today; may add a Supabase cost).
+13. Supabase permission is "always allow", which also covers the Lovelio project.
