@@ -3,17 +3,19 @@
 # RecruiterLink
 
 Global directory of recruitment agencies, for commercial use. Ground-up
-rebuild replacing an earlier Lovable-built site. Goals: strong search engine
+rebuild that replaced an earlier Lovable-built site. Live on recruiterlink.com
+since 12 Nov 2026. Goals: strong search engine
 and AI-assistant visibility, and daily automated listing updates from an
 external bot through a connector.
 
 ## Where things live
 
 - Hosting: Vercel project `recruiterlink`, team `brettiredales-projects`.
-  Pushes to `main` publish automatically.
+  It serves recruiterlink.com (`www` redirects to the bare domain).
+  Pushes to `main` publish automatically to the live site.
 - Database: Supabase project `RecruiterLink`, ref `ipfjjrngsjixgbmkezzg`,
-  London (eu-west-2), organisation LOVELIO. Live database only; a separate
-  test database is to be added before launch.
+  London (eu-west-2), organisation LOVELIO. Live database only; there is no
+  separate test database yet, so testing touches live data.
 - Old data: schema `legacy` in the database holds an untouched, private copy
   of the old site's agency table (`legacy.recruitment_agencies`, 25,640 rows,
   loaded and verified 12 Nov 2026). Build the clean public tables from it
@@ -29,18 +31,18 @@ external bot through a connector.
   The owner can delete it in the Supabase dashboard; do not reuse it.
 - Migrations: `supabase/migrations/`, one file per migration applied to the
   database, named `<version>_<name>.sql` to match Supabase's own record.
-- Old site: repository `brettiredale/RecruiterLink-Live`, Vercel project
-  `recruiterlink2`, which currently serves recruiterlink.com. Reference only.
-  Do not change it, and do not copy its code across.
+- Old site: repository `brettiredale/RecruiterLink-Live` (archived on GitHub
+  13 Nov 2026, read-only) and Vercel project `recruiterlink2`, which no
+  longer serves recruiterlink.com. Reference only. Do not change it, and do
+  not copy its code across.
 
 ## How changes go live
 
-- Until launch: test each change (lint, types, build, and a run of the
-  affected pages), then put it on `main` directly. The site is private and
-  blocked from search engines, so no real visitor is affected. Use a branch
-  and its Vercel preview only when a change needs checking on Vercel first.
-- From launch day: every change goes to a preview and waits for the owner's
-  approval before it reaches `main`.
+- The site is live. Every code change goes to a branch and its Vercel
+  preview, is tested (lint, types, build, and a run of the affected pages),
+  and waits for the owner's approval before it reaches `main`.
+- Notes-only changes to this file are the one exception: they may go on
+  `main` directly.
 - The owner is not technical. Explain things in plain language, and give
   click-by-click steps for anything they must do in Vercel, Supabase or
   GitHub.
@@ -107,23 +109,32 @@ external bot through a connector.
   without the owner asking for it by name.
 - Never commit keys, `.env` files or data exports. Agency and job seeker
   data contains personal details.
-- Search engines stay blocked until launch. The switch is `SITE_INDEXABLE`
-  (see `src/lib/site.ts`). Do not set it, and do not move the
-  recruiterlink.com address to this project, without the owner's say-so.
+- Search engines are allowed since launch: `SITE_INDEXABLE=true` is set on
+  the Vercel Production environment only (see `src/lib/site.ts`). Do not
+  remove it, or set it on Preview or Development, without the owner's say-so.
 - Every public page must be delivered as complete HTML from the server,
   never assembled in the browser. This is the main reason for the rebuild.
 - Database changes go through Supabase migrations, never ad hoc edits.
 - Before committing: `npm run lint`, `npx tsc --noEmit` and `npm run build`
   must all pass.
 
-## Working in a Claude cloud session
+## Working on the owner's computer (since 13 Nov 2026)
 
-- Run the site with `NODE_USE_ENV_PROXY=1` (for example
-  `NODE_USE_ENV_PROXY=1 npm run dev`). Without it the site cannot reach
-  Supabase from inside the cloud container, although the database is fine.
-- `/api/health` reports whether the deployment's Supabase settings work.
-  Vercel does not let Claude read or change project settings, so this is
-  how to confirm them after the owner edits them in Vercel.
+- The owner now works on this project in the Claude desktop app, in the
+  folder `~/recruiterlink`, not in Claude cloud sessions.
+- The folder is linked to Vercel project `recruiterlink` (`.vercel/`, not
+  committed) and the Vercel CLI is signed in, so Claude can read and change
+  the project's settings and environment variables directly (`vercel env`,
+  `vercel domains`, and the Vercel connector). Ask the owner before any
+  change that affects the live site.
+- Supabase: the Supabase connector reaches project `ipfjjrngsjixgbmkezzg`.
+  The Supabase CLI is not signed in on this computer.
+- Local settings: `vercel env pull .env.local --yes` downloads the
+  Development values (the Supabase address and publishable key). The
+  Supabase secret key and Resend key are set for Production and Preview
+  only, so sign-in emails, logo uploads and form emails do not work locally.
+- Run the site with `npm run dev` (also in `.claude/launch.json`).
+- `/api/health` reports whether a deployment's Supabase settings work.
 
 ## Database
 
@@ -250,7 +261,7 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 ## Launch (owner's go-ahead given 12 Nov 2026)
 
 - The owner reviewed the site and asked for it to go live on recruiterlink.com and for the remaining city photos to be finished (once they top up fal.ai).
-- Claude cannot change Vercel settings (the connector refuses), so the owner does three things in Vercel: add `SITE_INDEXABLE=true` (Production only) to project `recruiterlink`, redeploy, then move `recruiterlink.com` and `www.recruiterlink.com` from project `recruiterlink2` to `recruiterlink`. After that, confirm with `/api/health`, `/robots.txt` (must allow and name the sitemap) and a legacy agency address on the real domain.
+- (History: before 13 Nov 2026, in cloud sessions, Claude could not change Vercel settings. That no longer applies; see "Working on the owner's computer".) The owner did three things in Vercel: add `SITE_INDEXABLE=true` (Production only) to project `recruiterlink`, redeploy, then move `recruiterlink.com` and `www.recruiterlink.com` from project `recruiterlink2` to `recruiterlink`. After that, confirm with `/api/health`, `/robots.txt` (must allow and name the sitemap) and a legacy agency address on the real domain.
 - Once live, the "from launch day" rule applies: changes go to a preview and wait for the owner's approval.
 - Still owed after launch: delete 3 test rows in `public.listing_requests` (email `claude-form-test@example.com`; needs the owner's OK), a notification when the form is used, a separate test database, payments, logins, the bot connector, the AI part of search, and the Firecrawl content refresh the owner asked about.
 - Form notifications (owner's instruction, 12 Nov 2026): every agency sign-up and contact request is stored in `public.listing_requests` and then emailed to `brett@recruiterlink.com` and `brettiredale@gmail.com` through Resend (`src/features/requests/notify.ts`, sender `notifications@recruiterlink.com`, domain verified in Resend). It needs `RESEND_API_KEY` in Vercel (the owner adds it; Claude cannot). Without the key the request is still stored and a warning is logged. DNS for recruiterlink.com is at Namecheap BasicDNS (moved off Cloudflare 12 Nov 2026); the mailbox runs on MXroute.
