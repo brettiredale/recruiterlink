@@ -15,7 +15,9 @@ import {
   reviewPath,
   signInPath,
 } from "@/lib/routes";
+import { getCountries, getCountryCities } from "@/lib/directory";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseSessionClient } from "@/lib/supabase/session";
 import { NOTIFICATION_RECIPIENTS, sendRequestNotification } from "@/features/requests/notify";
 import { getAccount, getListing, getPendingSubmissions } from "./data";
@@ -25,9 +27,11 @@ import {
   buildSignInEmail,
   buildSubmissionEmail,
 } from "./emails";
+import type { CityChoice } from "./city-match";
 import { linkOrigin, visitorIp } from "./origin";
 import {
   ACCOUNT_HONEYPOT_FIELD,
+  type CityChoiceValue,
   LOGO_MAX_BYTES,
   cleanLine,
   cleanText,
@@ -445,13 +449,64 @@ const SUBMIT_MESSAGES: Record<string, string> = {
   domain_mismatch: "The website must be on the same domain as the email address you signed in with.",
 };
 
+/**
+ * The cities already listed in a country, for the city picker on the
+ * "Add your agency" form. The same public facts as the country's page, read
+ * from the same day-long cache. Empty for an unknown country.
+ */
+export async function getCityChoices(countryId: number): Promise<CityChoice[]> {
+  if (!Number.isInteger(countryId) || countryId <= 0) return [];
+  const country = (await getCountries()).find((c) => c.id === countryId);
+  if (!country) return [];
+  const cities = await getCountryCities(country.slug);
+  return cities.map((city) => ({ id: city.id, name: city.name, agencies: city.agencyCount }));
+}
+
+/** `%`, `_` and `\` match literally in a Postgres `ilike`. */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/**
+ * Checks the city against the database. A listed city must belong to the
+ * chosen country. A "new" city that we already have (any capitalisation)
+ * becomes that city, so no second page is made for it.
+ */
+async function resolveCity(
+  countryId: number,
+  choice: CityChoiceValue,
+): Promise<{ name: string; isNew: boolean } | null> {
+  const db = getSupabaseServerClient();
+  if (choice.kind === "listed") {
+    const { data, error } = await db
+      .from("cities")
+      .select("name")
+      .eq("id", choice.id)
+      .eq("country_id", countryId)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? { name: data.name, isNew: false } : null;
+  }
+  const { data, error } = await db
+    .from("cities")
+    .select("name")
+    .eq("country_id", countryId)
+    .ilike("name", escapeLike(choice.name))
+    .limit(1);
+  if (error) throw error;
+  return data[0] ? { name: data[0].name, isNew: false } : { name: choice.name, isNew: true };
+}
+
 /** Sends a new listing for review. */
 export async function submitNewListing(_previous: NewListingState, formData: FormData): Promise<NewListingState> {
   const values: Record<string, string | string[]> = {
     name: cleanLine(formData.get("name")),
     website: cleanLine(formData.get("website")),
     country: cleanLine(formData.get("country")),
-    city: cleanLine(formData.get("city")),
+    city_mode: cleanLine(formData.get("city_mode")),
+    city_id: cleanLine(formData.get("city_id")),
+    city_label: cleanLine(formData.get("city_label")),
+    city_new: cleanLine(formData.get("city_new")),
     introduction: cleanText(formData.get("introduction")),
     description: cleanText(formData.get("description")),
     specialisms: formData.getAll("specialisms").filter((v): v is string => typeof v === "string"),
@@ -465,7 +520,9 @@ export async function submitNewListing(_previous: NewListingState, formData: For
       name: formData.get("name"),
       website: formData.get("website"),
       country: formData.get("country"),
-      city: formData.get("city"),
+      cityMode: formData.get("city_mode"),
+      cityId: formData.get("city_id"),
+      newCity: formData.get("city_new"),
       introduction: formData.get("introduction"),
       description: formData.get("description"),
       specialisms: formData.getAll("specialisms"),
@@ -475,13 +532,29 @@ export async function submitNewListing(_previous: NewListingState, formData: For
   if (!result.ok) return { status: "error", at: Date.now(), errors: result.errors, values };
   const listing = result.value;
 
+  let city: { name: string; isNew: boolean } | null;
+  try {
+    city = await resolveCity(listing.countryId as number, listing.city as CityChoiceValue);
+  } catch (error) {
+    console.error("City check failed:", error);
+    return { status: "error", at: Date.now(), message: TRY_AGAIN, errors: {}, values };
+  }
+  if (!city) {
+    return {
+      status: "error",
+      at: Date.now(),
+      errors: { city: "That city is not in our list for this country. Please choose it again." },
+      values: { ...values, city_id: "", city_label: "" },
+    };
+  }
+
   try {
     const supabase = await getSupabaseSessionClient();
     const { error } = await supabase.rpc("submit_new_listing", {
       new_name: listing.name,
       new_website: listing.website,
       new_country_id: listing.countryId as number,
-      new_city_name: listing.city,
+      new_city_name: city.name,
       new_introduction: listing.introduction,
       new_description: listing.description,
       new_specialism_ids: listing.specialismIds,
@@ -496,7 +569,7 @@ export async function submitNewListing(_previous: NewListingState, formData: For
       name: listing.name,
       website: `https://${account.domain}`,
       email: account.email,
-      city: listing.city,
+      city: city.isNew ? `${city.name} (new city: check the spelling before publishing)` : city.name,
       description: listing.description,
       reviewUrl: `${await linkOrigin()}${reviewPath}`,
     });

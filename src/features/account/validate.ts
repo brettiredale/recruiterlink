@@ -131,12 +131,32 @@ export function validateListingText(raw: {
 export type NewListingField = "name" | "website" | "country" | "city" | ListingTextField;
 export type NewListingErrors = Partial<Record<NewListingField, string>>;
 
+/**
+ * The city on a new listing: one already in the directory (chosen from the
+ * list), or a new one the agency typed because theirs is not listed.
+ */
+export type CityChoiceValue = { kind: "listed"; id: number } | { kind: "new"; name: string };
+
 export type NewListing = ListingText & {
   name: string;
   website: string;
   countryId: number | null;
-  city: string;
+  city: CityChoiceValue | null;
 };
+
+export const CITY_ERRORS = {
+  noCountry: "Choose your country first, then your city.",
+  notChosen: "Choose your city from the list. If it is not there, choose \u201cMy city is not listed\u201d.",
+  newEmpty: "Enter the name of your city.",
+  newHasRegion: "Enter just the city name, without the state or region. For example: Miami.",
+} as const;
+
+/** What the city part of the form sent: a listed city's id, or a new city's name. */
+function parseCityChoice(mode: unknown, cityId: unknown, newCity: unknown): CityChoiceValue | null {
+  if (mode === "new") return { kind: "new", name: cleanLine(newCity) };
+  const id = typeof cityId === "string" && /^\d{1,9}$/.test(cityId) ? Number(cityId) : NaN;
+  return Number.isInteger(id) && id > 0 ? { kind: "listed", id } : null;
+}
 
 /**
  * A brand-new listing. The website has to be on the same domain as the
@@ -147,7 +167,10 @@ export function validateNewListing(
     name: unknown;
     website: unknown;
     country: unknown;
-    city: unknown;
+    /** "list" (chose from the list) or "new" (their city is not listed). */
+    cityMode: unknown;
+    cityId: unknown;
+    newCity: unknown;
     introduction: unknown;
     description: unknown;
     specialisms: unknown[];
@@ -159,7 +182,7 @@ export function validateNewListing(
     name: cleanLine(raw.name),
     website: cleanLine(raw.website),
     countryId: Number.isInteger(countryId) && countryId > 0 ? countryId : null,
-    city: cleanLine(raw.city),
+    city: parseCityChoice(raw.cityMode, raw.cityId, raw.newCity),
     introduction: cleanText(raw.introduction),
     description: cleanText(raw.description),
     specialismIds: parseSpecialismIds(raw.specialisms),
@@ -176,9 +199,19 @@ export function validateNewListing(
     errors.website = `The website must be on ${accountDomain}, the same domain as the email address you signed in with.`;
   }
 
-  if (value.countryId === null) errors.country = "Choose a country.";
-  if (value.city.length < city.min) errors.city = "Enter the city your agency is based in.";
-  else if (value.city.length > city.max) errors.city = `Keep the city to ${city.max} characters or fewer.`;
+  if (value.countryId === null) {
+    errors.country = "Choose a country.";
+    errors.city = CITY_ERRORS.noCountry;
+  } else if (!value.city) {
+    errors.city = CITY_ERRORS.notChosen;
+  } else if (value.city.kind === "new") {
+    const typed = value.city.name;
+    if (typed.length < city.min) errors.city = CITY_ERRORS.newEmpty;
+    else if (typed.length > city.max) errors.city = `Keep the city to ${city.max} characters or fewer.`;
+    // "Miami, Florida" or "Leeds (West Yorkshire)" would make a second page for the same city.
+    else if (/[,;/()|]/.test(typed)) errors.city = CITY_ERRORS.newHasRegion;
+    else if (!/\p{L}/u.test(typed)) errors.city = CITY_ERRORS.newEmpty;
+  }
 
   return Object.keys(errors).length ? { ok: false, errors, value } : { ok: true, value };
 }

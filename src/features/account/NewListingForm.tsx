@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useId, useRef } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { submitNewListing, type NewListingState } from "./actions";
+import { CityPicker } from "./CityPicker";
 import {
   CountedTextarea,
   Field,
@@ -71,12 +72,63 @@ export function NewListingForm({
 
   return (
     <form key={formKey} action={action} noValidate className="flex flex-col gap-7">
-      {state.status === "error" ? (
+      <ListingFields
+        domain={domain}
+        countries={countries}
+        specialisms={specialisms}
+        errors={errors}
+        text={text}
+        chosen={chosen}
+        fid={fid}
+        statusRef={statusRef}
+        notice={
+          state.status === "error"
+            ? (state.message ??
+              (errorCount === 1
+                ? "Nothing was sent. Please check the field marked below."
+                : `Nothing was sent. Please check the ${errorCount} fields marked below.`))
+            : null
+        }
+      />
+    </form>
+  );
+}
+
+/**
+ * The fields themselves. A separate component so the chosen country can be
+ * remembered here (the city list follows it) and start afresh whenever the
+ * server sends the form back.
+ */
+function ListingFields({
+  domain,
+  countries,
+  specialisms,
+  errors,
+  text,
+  chosen,
+  fid,
+  statusRef,
+  notice,
+}: {
+  domain: string;
+  countries: { id: number; name: string }[];
+  specialisms: { id: number; name: string }[];
+  errors: Partial<Record<string, string>>;
+  text: (name: string) => string;
+  chosen: number[];
+  fid: (name: string) => string;
+  statusRef: React.RefObject<HTMLDivElement | null>;
+  notice: string | null;
+}) {
+  const sentCountry = Number(text("country"));
+  const firstCountry = Number.isInteger(sentCountry) && sentCountry > 0 ? sentCountry : null;
+  const [countryId, setCountryId] = useState<number | null>(firstCountry);
+
+  return (
+    <>
+      {notice ? (
         <Notice tone="error" innerRef={statusRef}>
-          {state.message ??
-            (errorCount === 1
-              ? "Nothing was sent. Please check the field marked below."
-              : `Nothing was sent. Please check the ${errorCount} fields marked below.`)}
+          {notice}
         </Notice>
       ) : null}
 
@@ -128,6 +180,10 @@ export function NewListingForm({
             name="country"
             required
             defaultValue={text("country")}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              setCountryId(Number.isInteger(value) && value > 0 ? value : null);
+            }}
             aria-invalid={errors.country ? true : undefined}
             aria-describedby={describedBy(fid("country"), true, Boolean(errors.country))}
             className={inputClass}
@@ -141,20 +197,22 @@ export function NewListingForm({
           </select>
         </Field>
 
-        <Field id={fid("city")} label="City" hint="Your main office's city." error={errors.city}>
-          <input
-            id={fid("city")}
-            name="city"
-            type="text"
-            autoComplete="address-level2"
-            maxLength={LISTING_LIMITS.city.max}
-            required
-            defaultValue={text("city")}
-            aria-invalid={errors.city ? true : undefined}
-            aria-describedby={describedBy(fid("city"), true, Boolean(errors.city))}
-            className={inputClass}
-          />
-        </Field>
+        <CityPicker
+          // A different country starts the city afresh.
+          key={countryId ?? "none"}
+          countryId={countryId}
+          error={countryId === firstCountry ? errors.city : undefined}
+          initial={
+            countryId === firstCountry
+              ? {
+                  mode: text("city_mode") === "new" ? "new" : "list",
+                  cityId: text("city_id"),
+                  label: text("city_label"),
+                  newCity: text("city_new"),
+                }
+              : { mode: "list", cityId: "", label: "", newCity: "" }
+          }
+        />
       </div>
       <p className="-mt-3 text-[15px] text-muted">
         Is your country not in the list?{" "}
@@ -217,6 +275,6 @@ export function NewListingForm({
           A free listing costs nothing. You can add your logo once the listing is published.
         </p>
       </div>
-    </form>
+    </>
   );
 }

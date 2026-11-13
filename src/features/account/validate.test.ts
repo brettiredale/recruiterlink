@@ -11,6 +11,7 @@ import {
   validateNewListing,
   websiteHost,
 } from "./validate.ts";
+import { cityQueryCore, exactCity, foldCityText, rankCities } from "./city-match.ts";
 
 test("emails are trimmed, lower-cased and checked", () => {
   assert.equal(parseEmail("  Ana@Ruiz-Talent.COM "), "ana@ruiz-talent.com");
@@ -82,14 +83,32 @@ test("listing words: duplicates collapse and control characters are removed", ()
 });
 
 test("new listing: the website must be on the signed-in email's domain", () => {
-  const base = { ...goodText, name: "Ruiz Talent", website: "https://www.ruiz-talent.com/", country: "5", city: "Madrid" };
+  const base = {
+    ...goodText,
+    name: "Ruiz Talent",
+    website: "https://www.ruiz-talent.com/",
+    country: "5",
+    cityMode: "list",
+    cityId: "42",
+    newCity: "",
+  };
   assert.equal(validateNewListing(base, "ruiz-talent.com").ok, true);
 
   const other = validateNewListing({ ...base, website: "other.com" }, "ruiz-talent.com");
   assert.match(other.ok === false ? other.errors.website ?? "" : "", /must be on ruiz-talent\.com/);
 
   const empty = validateNewListing(
-    { name: "", website: "", country: "", city: "", introduction: "", description: "", specialisms: [] },
+    {
+      name: "",
+      website: "",
+      country: "",
+      cityMode: "list",
+      cityId: "",
+      newCity: "",
+      introduction: "",
+      description: "",
+      specialisms: [],
+    },
     "ruiz-talent.com",
   );
   assert.equal(empty.ok, false);
@@ -107,4 +126,66 @@ test("images are recognised by their contents, not their names", () => {
   // An SVG or a script renamed to .png is refused.
   assert.equal(sniffImage(new TextEncoder().encode("<svg onload=alert(1)>")), null);
   assert.equal(sniffImage(new Uint8Array([])), null);
+});
+
+test("new listing: the city must be chosen from the list, or added as a new city", () => {
+  const base = {
+    ...goodText,
+    name: "Ruiz Talent",
+    website: "ruiz-talent.com",
+    country: "5",
+    cityMode: "list",
+    cityId: "42",
+    newCity: "",
+  };
+  const listed = validateNewListing(base, "ruiz-talent.com");
+  assert.deepEqual(listed.value.city, { kind: "listed", id: 42 });
+
+  // Typed but not chosen: no id arrives, so nothing is sent.
+  const unchosen = validateNewListing({ ...base, cityId: "" }, "ruiz-talent.com");
+  assert.match(unchosen.ok === false ? unchosen.errors.city ?? "" : "", /from the list/);
+  const junkId = validateNewListing({ ...base, cityId: "42; drop" }, "ruiz-talent.com");
+  assert.equal(junkId.ok, false);
+
+  const added = validateNewListing({ ...base, cityMode: "new", cityId: "", newCity: "  Ciudad  Real " }, "ruiz-talent.com");
+  assert.deepEqual(added.value.city, { kind: "new", name: "Ciudad Real" });
+  assert.equal(added.ok, true);
+
+  for (const withRegion of ["Miami, Florida", "Leeds (West Yorkshire)", "Austin / TX"]) {
+    const result = validateNewListing({ ...base, cityMode: "new", newCity: withRegion }, "ruiz-talent.com");
+    assert.match(result.ok === false ? result.errors.city ?? "" : "", /without the state or region/, withRegion);
+  }
+  const blank = validateNewListing({ ...base, cityMode: "new", newCity: " " }, "ruiz-talent.com");
+  assert.match(blank.ok === false ? blank.errors.city ?? "" : "", /name of your city/);
+  const digits = validateNewListing({ ...base, cityMode: "new", newCity: "12345" }, "ruiz-talent.com");
+  assert.equal(digits.ok, false);
+
+  const noCountry = validateNewListing({ ...base, country: "" }, "ruiz-talent.com");
+  assert.match(noCountry.ok === false ? noCountry.errors.city ?? "" : "", /country first/);
+});
+
+test("city picker: matches ignore case, accents and anything after a comma", () => {
+  const cities = [
+    { id: 1, name: "Miami", agencies: 117 },
+    { id: 2, name: "Miami Beach", agencies: 15 },
+    { id: 3, name: "North Miami Beach", agencies: 2 },
+    { id: 4, name: "Malmö", agencies: 9 },
+    { id: 5, name: "Homestead", agencies: 3 },
+  ];
+  assert.equal(foldCityText("  Malmö "), "malmo");
+  assert.equal(cityQueryCore("Miami,  Florida"), "Miami");
+
+  // Starts-with first (most agencies first), then word starts, then contains.
+  assert.deepEqual(rankCities(cities, "miami", 8).map((c) => c.id), [1, 2, 3]);
+  assert.deepEqual(rankCities(cities, "Miami, Florida", 8).map((c) => c.id), [1, 2, 3]);
+  assert.deepEqual(rankCities(cities, "beach", 8).map((c) => c.id), [2, 3]);
+  assert.deepEqual(rankCities(cities, "malmo", 8).map((c) => c.id), [4]);
+  assert.deepEqual(rankCities(cities, "stead", 8).map((c) => c.id), [5]);
+  // Nothing typed: the biggest cities.
+  assert.deepEqual(rankCities(cities, "", 2).map((c) => c.id), [1, 2]);
+  assert.deepEqual(rankCities(cities, "zzz", 8), []);
+
+  assert.equal(exactCity(cities, "MIAMI, FL")?.id, 1);
+  assert.equal(exactCity(cities, "Malmo")?.id, 4);
+  assert.equal(exactCity(cities, "Mia"), undefined);
 });
