@@ -8,6 +8,8 @@ import { revalidateDirectory } from "@/lib/revalidate";
 import {
   accountListingPath,
   accountPath,
+  adminPath,
+  adminSignInPath,
   agencyPath,
   confirmSignInPath,
   reviewPath,
@@ -51,6 +53,21 @@ export type SignInState =
   | { step: "code"; email: string; error?: string; resent?: boolean };
 
 /**
+ * Where a sign-in finishes. Agencies go to their account; the admin sign-in
+ * at /admin/sign-in goes back to /admin. Only these two fixed values are
+ * accepted from the form, so the field cannot send anyone to another site.
+ */
+type SignInDestination = "account" | "admin";
+
+function readDestination(value: FormDataEntryValue | null): SignInDestination {
+  return value === "admin" ? "admin" : "account";
+}
+
+function signInPageFor(destination: SignInDestination): string {
+  return destination === "admin" ? adminSignInPath : signInPath;
+}
+
+/**
  * Step one: the person gives their email address and we send a sign-in
  * code. There are no passwords. An account is created the first time an
  * address signs in, so the answer is the same for every address and nobody
@@ -63,9 +80,17 @@ async function requestSignIn(_previous: SignInState, formData: FormData): Promis
     return { step: "code", email: typed.slice(0, 254) };
   }
 
+  const destination = readDestination(formData.get("next"));
   const email = parseEmail(typed);
   if (!email) {
-    return { step: "email", email: typed, error: "Enter your work email address, for example name@youragency.com." };
+    return {
+      step: "email",
+      email: typed,
+      error:
+        destination === "admin"
+          ? "Enter your email address, for example name@example.com."
+          : "Enter your work email address, for example name@youragency.com.",
+    };
   }
   const resent = formData.get("resend") === "1";
 
@@ -97,7 +122,9 @@ async function requestSignIn(_previous: SignInState, formData: FormData): Promis
     const origin = await linkOrigin();
     const message = buildSignInEmail({
       code,
-      link: `${origin}${confirmSignInPath}?token_hash=${encodeURIComponent(tokenHash)}`,
+      link:
+        `${origin}${confirmSignInPath}?token_hash=${encodeURIComponent(tokenHash)}` +
+        (destination === "admin" ? "&next=admin" : ""),
     });
     const sent = await sendEmail({ to: [email], ...message });
     if (!sent) return { step: "email", email, error: TRY_AGAIN };
@@ -116,8 +143,13 @@ export async function signInStep(previous: SignInState, formData: FormData): Pro
     : requestSignIn(previous, formData);
 }
 
-/** After a successful sign-in: claim the one obvious listing, then go to the account. */
-async function finishSignIn(): Promise<never> {
+/**
+ * After a successful sign-in. The admin sign-in goes straight back to
+ * /admin (whose pages check that this person really is the admin).
+ * Agencies claim the one obvious listing, then go to their account.
+ */
+async function finishSignIn(destination: SignInDestination): Promise<never> {
+  if (destination === "admin") redirect(adminPath);
   try {
     const supabase = await getSupabaseSessionClient();
     const claimed = await supabase.rpc("claim_single_match");
@@ -167,7 +199,7 @@ async function verifySignInCode(_previous: SignInState, formData: FormData): Pro
     console.error("Code check failed:", error);
     return { step: "code", email, error: TRY_AGAIN };
   }
-  return finishSignIn();
+  return finishSignIn(readDestination(formData.get("next")));
 }
 
 /**
@@ -178,7 +210,8 @@ async function verifySignInCode(_previous: SignInState, formData: FormData): Pro
  */
 export async function confirmSignInLink(formData: FormData): Promise<void> {
   const tokenHash = parseTokenHash(formData.get("token_hash"));
-  if (!tokenHash) redirect(`${signInPath}?problem=link`);
+  const destination = readDestination(formData.get("next"));
+  if (!tokenHash) redirect(`${signInPageFor(destination)}?problem=link`);
   let failed = false;
   try {
     const supabase = await getSupabaseSessionClient();
@@ -188,18 +221,28 @@ export async function confirmSignInLink(formData: FormData): Promise<void> {
     console.error("Link check failed:", error);
     failed = true;
   }
-  if (failed) redirect(`${signInPath}?problem=link`);
-  return finishSignIn();
+  if (failed) redirect(`${signInPageFor(destination)}?problem=link`);
+  return finishSignIn(destination);
 }
 
-export async function signOut(): Promise<void> {
+async function endSession(): Promise<void> {
   try {
     const supabase = await getSupabaseSessionClient();
     await supabase.auth.signOut({ scope: "local" });
   } catch (error) {
     console.error("Sign-out failed:", error);
   }
+}
+
+export async function signOut(): Promise<void> {
+  await endSession();
   redirect(`${signInPath}?notice=signed-out`);
+}
+
+/** Sign-out from the admin area, which returns to the admin sign-in. */
+export async function signOutAdmin(): Promise<void> {
+  await endSession();
+  redirect(`${adminSignInPath}?notice=signed-out`);
 }
 
 // ---------------------------------------------------------------------------
@@ -492,7 +535,7 @@ export async function askToBeLinked(_previous: HelpState, formData: FormData): P
 
   try {
     const supabase = await getSupabaseSessionClient();
-    const message = `Signed in to an account with ${account.email} and asked to be linked to this agency's listing. Link them at /account/review once checked.`;
+    const message = `Signed in to an account with ${account.email} and asked to be linked to this agency's listing. Link them at ${await linkOrigin()}${reviewPath} once checked.`;
     const { error } = await supabase.from("listing_requests").insert({
       kind: "claim",
       name: values.name,

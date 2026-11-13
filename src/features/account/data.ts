@@ -99,8 +99,9 @@ export async function getAccount(): Promise<Account | null> {
   const supabase = await getSupabaseSessionClient();
   const { data, error } = await supabase.rpc("my_account");
   if (error) {
-    // 28000: the database saw no signed-in, confirmed person.
-    if (error.code !== "28000") console.error("my_account failed:", error.code, error.message);
+    // 28000: the database saw no signed-in, confirmed person. 42501: nobody
+    // is signed in at all (the admin sign-in page asks before anyone has).
+    if (error.code !== "28000" && error.code !== "42501") console.error("my_account failed:", error.code, error.message);
     return null;
   }
   return data as unknown as Account;

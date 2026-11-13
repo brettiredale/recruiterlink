@@ -5,17 +5,38 @@ import { signInStep, type SignInState } from "./actions";
 import { Field, Notice, SubmitButton, describedBy, inputClass } from "./ui";
 import { ACCOUNT_HONEYPOT_FIELD } from "./validate";
 
+/** Who the sign-in is for: agencies (the default) or the site's admin. */
+export type SignInAudience = "agency" | "admin";
+
 /**
  * Sign-in in two short steps: your work email, then the short code we
  * email you. There is no password to choose or remember.
  */
-export function SignInFlow({ notice }: { notice?: string }) {
+export function SignInFlow({ notice, audience = "agency" }: { notice?: string; audience?: SignInAudience }) {
   // "Use a different email address" starts the steps again from scratch.
   const [round, setRound] = useState(0);
-  return <SignInSteps key={round} notice={round === 0 ? notice : undefined} onRestart={() => setRound((n) => n + 1)} />;
+  return (
+    <SignInSteps
+      key={round}
+      audience={audience}
+      notice={round === 0 ? notice : undefined}
+      onRestart={() => setRound((n) => n + 1)}
+    />
+  );
 }
 
-function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => void }) {
+function SignInSteps({
+  notice,
+  audience,
+  onRestart,
+}: {
+  notice?: string;
+  audience: SignInAudience;
+  onRestart: () => void;
+}) {
+  const forAdmin = audience === "admin";
+  // Tells the server where to go once the code is accepted.
+  const destination = <input type="hidden" name="next" value={forAdmin ? "admin" : "account"} />;
   const [view, action] = useActionState<SignInState, FormData>(signInStep, { step: "email" });
   const id = useId();
   const statusRef = useRef<HTMLDivElement>(null);
@@ -44,6 +65,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
         <form action={action} noValidate className="flex flex-col gap-5">
           <input type="hidden" name="intent" value="verify" />
           <input type="hidden" name="email" value={view.email} />
+          {destination}
           <Field id={codeId} label="Sign-in code" hint="The 8 numbers from the email we just sent.">
             <input
               id={codeId}
@@ -69,6 +91,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
             <input type="hidden" name="intent" value="send" />
             <input type="hidden" name="email" value={view.email} />
             <input type="hidden" name="resend" value="1" />
+            {destination}
             <button
               type="submit"
               className="min-h-11 cursor-pointer font-bold text-indigo underline underline-offset-4 hover:text-indigo-deep"
@@ -92,6 +115,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
   return (
     <form action={action} noValidate className="flex flex-col gap-5">
       <input type="hidden" name="intent" value="send" />
+      {destination}
       {notice ? <Notice tone="info">{notice}</Notice> : null}
       {view.error ? (
         <Notice tone="error" innerRef={statusRef}>
@@ -100,8 +124,12 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
       ) : null}
       <Field
         id={emailId}
-        label="Your work email address"
-        hint="Use the address at your agency's own domain, such as name@youragency.com. That is how we know which listing is yours."
+        label={forAdmin ? "Your email address" : "Your work email address"}
+        hint={
+          forAdmin
+            ? "Only the RecruiterLink administrator's address can open the admin area."
+            : "Use the address at your agency's own domain, such as name@youragency.com. That is how we know which listing is yours."
+        }
       >
         <input
           id={emailId}
@@ -115,7 +143,7 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
           defaultValue={view.email ?? ""}
           aria-invalid={view.error ? true : undefined}
           aria-describedby={describedBy(emailId, true, false)}
-          placeholder="name@youragency.com"
+          placeholder={forAdmin ? "name@example.com" : "name@youragency.com"}
           className={inputClass}
         />
       </Field>
@@ -132,8 +160,9 @@ function SignInSteps({ notice, onRestart }: { notice?: string; onRestart: () => 
         </SubmitButton>
       </div>
       <p className="text-[15px] text-muted">
-        No password needed. We email you a code each time you sign in. It is free, and nothing is
-        charged.
+        {forAdmin
+          ? "No password needed. We email you a code each time you sign in."
+          : "No password needed. We email you a code each time you sign in. It is free, and nothing is charged."}
       </p>
     </form>
   );

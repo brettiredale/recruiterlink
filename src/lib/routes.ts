@@ -66,7 +66,6 @@ export const accountPath = "/account";
 export const signInPath = "/account/sign-in";
 export const confirmSignInPath = "/account/confirm";
 export const newListingPath = "/account/new-listing";
-export const reviewPath = "/account/review";
 
 export function accountListingPath(agencyId: string): string {
   return `/account/listings/${agencyId}`;
@@ -134,6 +133,10 @@ export function blogPagePath(page: number): string {
 
 // The admin area (site admins only). Private: never indexed or in a sitemap.
 export const adminPath = "/admin";
+/** Where the admin signs in. Signed-out visitors to any /admin page land here. */
+export const adminSignInPath = "/admin/sign-in";
+/** New listings waiting to be published (moved here from /account/review). */
+export const reviewPath = "/admin/review";
 export const adminBlogPath = "/admin/blog";
 export const adminNewPostPath = "/admin/blog/new";
 export const adminConnectPath = "/admin/connect";

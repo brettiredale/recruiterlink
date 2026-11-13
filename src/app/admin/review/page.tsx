@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { buttonClasses } from "@/components";
-import { AccountShell, Panel } from "@/features/account/AccountShell";
+import { Panel } from "@/features/account/AccountShell";
 import { reviewSubmission } from "@/features/account/actions";
-import { getAccount, getPendingSubmissions } from "@/features/account/data";
+import { getPendingSubmissions } from "@/features/account/data";
 import { LinkPersonForm } from "@/features/account/SmallForms";
 import { Notice, SubmitButton, inputClass } from "@/features/account/ui";
-import { signInPath } from "@/lib/routes";
+import { AdminLoading, AdminShell } from "@/features/admin/AdminShell";
+import { requireAdmin } from "@/features/admin/guard";
+import { adminSignInPath } from "@/lib/routes";
 import { toParagraphs } from "@/lib/text";
-import AccountLoading from "../loading";
 
 export const metadata: Metadata = { title: "Review new listings" };
 
@@ -21,19 +22,18 @@ const NOTICES: Record<string, { tone: "success" | "error" | "info"; text: string
   failed: { tone: "error", text: "That did not work. Please try again." },
 };
 
-async function Review({ searchParams }: { searchParams: PageProps<"/account/review">["searchParams"] }) {
-  const [account, params] = await Promise.all([getAccount(), searchParams]);
-  if (!account) redirect(signInPath);
-  // The database decides who runs the site; everyone else sees "not found".
-  const submissions = account.is_admin ? await getPendingSubmissions() : null;
-  if (!submissions) notFound();
+async function Review({ searchParams }: { searchParams: PageProps<"/admin/review">["searchParams"] }) {
+  const [account, params] = await Promise.all([requireAdmin(), searchParams]);
+  // Null unless the database agrees this person runs the site.
+  const submissions = await getPendingSubmissions();
+  if (!submissions) redirect(adminSignInPath);
   const notice = typeof params.notice === "string" ? NOTICES[params.notice] : undefined;
 
   return (
-    <AccountShell
+    <AdminShell
+      section="review"
       title="Review new listings"
       email={account.email}
-      back
       intro="New listings sent in by agencies. Each sender has confirmed an email address on the same domain as the website shown, so you are checking that it is a real recruitment agency and that the wording is fit to publish."
     >
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
@@ -130,13 +130,13 @@ async function Review({ searchParams }: { searchParams: PageProps<"/account/revi
           <LinkPersonForm />
         </div>
       </Panel>
-    </AccountShell>
+    </AdminShell>
   );
 }
 
-export default function ReviewPage({ searchParams }: PageProps<"/account/review">) {
+export default function ReviewPage({ searchParams }: PageProps<"/admin/review">) {
   return (
-    <Suspense fallback={<AccountLoading />}>
+    <Suspense fallback={<AdminLoading />}>
       <Review searchParams={searchParams} />
     </Suspense>
   );

@@ -5,7 +5,7 @@ import { Container } from "@/components";
 import { confirmSignInLink } from "@/features/account/actions";
 import { SubmitButton } from "@/features/account/ui";
 import { parseTokenHash } from "@/features/account/validate";
-import { signInPath } from "@/lib/routes";
+import { adminSignInPath, signInPath } from "@/lib/routes";
 
 export const metadata: Metadata = { title: "Confirm sign-in" };
 
@@ -17,6 +17,7 @@ export const metadata: Metadata = { title: "Confirm sign-in" };
 async function Confirm({ searchParams }: { searchParams: PageProps<"/account/confirm">["searchParams"] }) {
   const params = await searchParams;
   const tokenHash = parseTokenHash(params.token_hash);
+  const forAdmin = params.next === "admin";
 
   if (!tokenHash) {
     return (
@@ -28,7 +29,7 @@ async function Confirm({ searchParams }: { searchParams: PageProps<"/account/con
           Part of the link is missing, which can happen when an email program splits it across
           lines. Use the code from the same email, or ask for a new one.
         </p>
-        <Link href={signInPath} className="font-bold text-indigo underline underline-offset-4 hover:text-indigo-deep">
+        <Link href={forAdmin ? adminSignInPath : signInPath} className="font-bold text-indigo underline underline-offset-4 hover:text-indigo-deep">
           Go to sign-in
         </Link>
       </>
@@ -45,6 +46,7 @@ async function Confirm({ searchParams }: { searchParams: PageProps<"/account/con
       </p>
       <form action={confirmSignInLink}>
         <input type="hidden" name="token_hash" value={tokenHash} />
+        {forAdmin ? <input type="hidden" name="next" value="admin" /> : null}
         <SubmitButton pendingLabel="Signing in…" variant="primary">
           Sign in to RecruiterLink
         </SubmitButton>

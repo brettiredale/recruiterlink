@@ -47,6 +47,9 @@ const nextConfig: NextConfig = {
         destination: "https://recruiterlink.com/:path*",
         permanent: true,
       },
+      // The listing review page moved into the admin area (13 Nov 2026).
+      // Emails sent before then link to the old address.
+      { source: "/account/review", destination: "/admin/review", permanent: true },
       // Every address the old site exposed (see src/lib/legacy-redirects.ts).
       ...legacyRedirects,
     ];

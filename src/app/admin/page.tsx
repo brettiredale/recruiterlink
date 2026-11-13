@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ButtonLink } from "@/components";
 import { AdminLoading, AdminShell, adminDateTime } from "@/features/admin/AdminShell";
+import { getPendingSubmissions } from "@/features/account/data";
 import { requireAdmin } from "@/features/admin/guard";
 import { listAdminPosts, listApiKeys } from "@/features/blog/admin-data";
 import { adminBlogPath, adminConnectPath, adminNewPostPath, adminPostPath, reviewPath } from "@/lib/routes";
@@ -25,7 +26,8 @@ function Tile({ title, children, href, cta }: { title: string; children: React.R
 
 async function Overview() {
   const account = await requireAdmin();
-  const [posts, keys] = await Promise.all([listAdminPosts(), listApiKeys()]);
+  const [posts, keys, submissions] = await Promise.all([listAdminPosts(), listApiKeys(), getPendingSubmissions()]);
+  const waiting = submissions ?? [];
   const published = posts.filter((p) => p.status === "published").length;
   const drafts = posts.filter((p) => p.status === "draft");
   const liveKeys = keys.filter((k) => !k.revoked_at);
@@ -67,7 +69,23 @@ async function Overview() {
           )}
         </Tile>
         <Tile title="New listings" href={reviewPath} cta="Review new listings">
-          <p>Listings sent in by agencies that are waiting for you to publish or turn down.</p>
+          {waiting.length === 0 ? (
+            <p>Nothing is waiting. Listings that agencies send in appear here for you to publish or turn down.</p>
+          ) : (
+            <>
+              <p>
+                <strong className="text-navy">{waiting.length}</strong>{" "}
+                {waiting.length === 1 ? "listing is" : "listings are"} waiting for you to publish or turn down.
+              </p>
+              <ul className="mt-3 flex flex-col gap-1 text-base">
+                {waiting.slice(0, 3).map((submission) => (
+                  <li key={submission.id} className="truncate font-semibold text-navy">
+                    {submission.name}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </Tile>
       </div>
     </AdminShell>

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { Container } from "@/components";
 import { cx } from "@/components/cx";
-import { signOut } from "@/features/account/actions";
+import { signOutAdmin } from "@/features/account/actions";
 import { accountPath, adminBlogPath, adminConnectPath, adminPath, reviewPath } from "@/lib/routes";
 
-export type AdminSection = "overview" | "blog" | "connect";
+export type AdminSection = "overview" | "blog" | "connect" | "review";
 
-const SECTIONS: { id: AdminSection | "review" | "account"; label: string; href: string }[] = [
+const SECTIONS: { id: AdminSection | "account"; label: string; href: string }[] = [
   { id: "overview", label: "Overview", href: adminPath },
   { id: "blog", label: "Blog", href: adminBlogPath },
   { id: "connect", label: "Connect Grokbot", href: adminConnectPath },
@@ -59,7 +59,7 @@ export function AdminShell({
                 })}
               </ul>
             </nav>
-            <form action={signOut} className="flex flex-wrap items-center gap-x-3 text-[15px]">
+            <form action={signOutAdmin} className="flex flex-wrap items-center gap-x-3 text-[15px]">
               <span className="text-muted">
                 Signed in as <strong className="break-all text-navy">{email}</strong>
               </span>
