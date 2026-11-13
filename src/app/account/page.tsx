@@ -12,6 +12,7 @@ import {
   accountListingPath,
   agencyPath,
   newListingPath,
+  adminPath,
   reviewPath,
   signInPath,
 } from "@/lib/routes";
@@ -163,11 +164,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/account">
         <Panel
           tone="cream"
           title="You run this site"
-          description="Review new listings that agencies have sent in, and link people to listings by hand."
+          description="Write and manage blog posts, connect Grokbot, review new listings that agencies have sent in, and link people to listings by hand."
         >
-          <ButtonLink href={reviewPath} variant="navy">
-            Open the review page
-          </ButtonLink>
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink href={adminPath} variant="navy">
+              Open the admin area
+            </ButtonLink>
+            <ButtonLink href={reviewPath} variant="outline">
+              Review new listings
+            </ButtonLink>
+          </div>
         </Panel>
       ) : null}
 

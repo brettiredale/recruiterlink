@@ -240,6 +240,89 @@ export type Database = {
           },
         ]
       }
+      blog_posts: {
+        Row: {
+          author: string | null
+          body_markdown: string
+          cover_image_alt: string | null
+          cover_image_url: string | null
+          created_at: string
+          created_by: string
+          excerpt: string
+          id: string
+          published_at: string
+          slug: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string
+          word_count: number
+        }
+        Insert: {
+          author?: string | null
+          body_markdown?: string
+          cover_image_alt?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          created_by: string
+          excerpt?: string
+          id?: string
+          published_at?: string
+          slug: string
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          updated_by: string
+          word_count?: never
+        }
+        Update: {
+          author?: string | null
+          body_markdown?: string
+          cover_image_alt?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string
+          excerpt?: string
+          id?: string
+          published_at?: string
+          slug?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          word_count?: never
+        }
+        Relationships: []
+      }
+      blog_slug_redirects: {
+        Row: {
+          created_at: string
+          old_slug: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string
+          old_slug: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string
+          old_slug?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_slug_redirects_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cities: {
         Row: {
           country_id: number
@@ -603,14 +686,40 @@ export type Database = {
         Args: { submission_id: string }
         Returns: string
       }
+      admin_check: { Args: never; Returns: string }
+      admin_create_api_key: {
+        Args: { key_name: string; new_key_hash: string; new_key_prefix: string }
+        Returns: Json
+      }
+      admin_delete_blog_post: { Args: { target: string }; Returns: Json }
+      admin_get_blog_post: { Args: { target: string }; Returns: Json }
       admin_link_person: {
         Args: { agency_slug: string; person_email: string }
         Returns: undefined
       }
+      admin_list_api_keys: { Args: never; Returns: Json }
+      admin_list_blog_posts: { Args: never; Returns: Json }
       admin_list_submissions: { Args: never; Returns: Json }
       admin_reject_submission: {
         Args: { note: string; submission_id: string }
         Returns: undefined
+      }
+      admin_revoke_api_key: { Args: { target: string }; Returns: undefined }
+      admin_save_blog_post: {
+        Args: {
+          new_author: string
+          new_body: string
+          new_cover_alt: string
+          new_cover_url: string
+          new_excerpt: string
+          new_published_at: string
+          new_slug: string
+          new_status: string
+          new_tags: string[]
+          new_title: string
+          target: string
+        }
+        Returns: Json
       }
       agency_owner_emails: {
         Args: { target_agency: string }
@@ -620,6 +729,39 @@ export type Database = {
       allow_login_email: {
         Args: { target_email: string; visitor_ip: string }
         Returns: boolean
+      }
+      bot_check_key: {
+        Args: { api_key: string; is_write: boolean }
+        Returns: Json
+      }
+      bot_delete_blog_post: {
+        Args: { api_key: string; target: string }
+        Returns: Json
+      }
+      bot_get_blog_post: {
+        Args: { api_key: string; post_slug: string }
+        Returns: Json
+      }
+      bot_list_blog_posts: {
+        Args: { api_key: string; max_rows?: number; only_status?: string }
+        Returns: Json
+      }
+      bot_save_blog_post: {
+        Args: {
+          api_key: string
+          new_author: string
+          new_body: string
+          new_cover_alt: string
+          new_cover_url: string
+          new_excerpt: string
+          new_published_at: string
+          new_slug: string
+          new_status: string
+          new_tags: string[]
+          new_title: string
+          target: string
+        }
+        Returns: Json
       }
       claim_listing: { Args: { target_agency: string }; Returns: string }
       claim_single_match: { Args: never; Returns: string }

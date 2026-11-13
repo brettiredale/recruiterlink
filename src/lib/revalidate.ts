@@ -1,5 +1,6 @@
 import { revalidateTag } from "next/cache";
 import {
+  BLOG_TAG,
   COUNTRIES_TAG,
   DIRECTORY_TAG,
   SPECIALISMS_TAG,
@@ -56,4 +57,14 @@ export function revalidateDirectory(change: DirectoryChange): string[] {
   }
   for (const tag of tags) revalidateTag(tag, "max");
   return [...tags];
+}
+
+/**
+ * THE way to refresh the blog after a post is saved, published, renamed or
+ * deleted (admin pages, API and connector all call it). Unlike directory
+ * changes, the next visit waits for the fresh page instead of being shown
+ * the old one, so a post appears, changes or disappears straight away.
+ */
+export function refreshBlog(): void {
+  revalidateTag(BLOG_TAG, { expire: 0 });
 }

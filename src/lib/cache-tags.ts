@@ -27,3 +27,6 @@ export function cityTag(countrySlug: string, citySlug: string): string {
 export function agencyTag(agencySlug: string): string {
   return `agency:${agencySlug}`;
 }
+
+/** On every blog page and list (the blog, the home page's latest articles, sitemaps). */
+export const BLOG_TAG = "blog";

@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Runs before the account pages only (see `config.matcher`), never before
- * the public directory pages. It keeps the visitor's sign-in session fresh
+ * Runs before the account and admin pages only (see `config.matcher`),
+ * never before the public directory pages. It keeps the visitor's sign-in session fresh
  * and sends anyone who is not signed in to the sign-in page.
  */
 const OPEN_PATHS = new Set(["/account/sign-in", "/account/confirm"]);
@@ -44,11 +44,11 @@ export async function proxy(request: NextRequest) {
     return redirect;
   }
 
-  // Account pages are private: never store them in a shared cache.
+  // Account and admin pages are private: never store them in a shared cache.
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
 
 export const config = {
-  matcher: ["/account", "/account/:path*"],
+  matcher: ["/account", "/account/:path*", "/admin", "/admin/:path*"],
 };

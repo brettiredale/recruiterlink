@@ -1,3 +1,4 @@
+import { getRecentPosts } from "@/features/blog/data";
 import { getCountries, getSpecialisms, getTotals } from "@/lib/directory";
 import { siteUrl } from "@/lib/site";
 import { withoutGeneric } from "@/lib/specialisms";
@@ -7,10 +8,11 @@ import { withoutGeneric } from "@/lib/specialisms";
  * addresses are built. Every number comes from the database.
  */
 export async function GET() {
-  const [totals, countries, specialisms] = await Promise.all([
+  const [totals, countries, specialisms, posts] = await Promise.all([
     getTotals(),
     getCountries(),
     getSpecialisms(),
+    getRecentPosts(30),
   ]);
   const listed = countries.filter((country) => country.agencyCount > 0);
 
@@ -41,6 +43,7 @@ Every page has one fixed address with the same content for every visitor.
 - A specialism worldwide, by country and city: ${siteUrl}/specialisms/<specialism> (example: ${siteUrl}/specialisms/legal)
 - An agency: ${siteUrl}/agencies/<agency> (example: ${siteUrl}/agencies/caroo-manchester)
 - Search: ${siteUrl}/search?q=<words> (example: ${siteUrl}/search?q=IT+recruiters+in+Madrid)
+- Blog: ${siteUrl}/blog, with each article at ${siteUrl}/blog/<article>
 
 Slugs are lowercase words joined by hyphens, without accents.
 
@@ -58,7 +61,15 @@ ${withoutGeneric(specialisms)
   .map((item) => `- [${item.name}](${siteUrl}/specialisms/${item.slug})`)
   .join("\n")}
 
-## For recruitment agencies
+${
+  posts.length > 0
+    ? `## Latest articles
+
+${posts.map((post) => `- [${post.title}](${siteUrl}/blog/${post.slug})${post.excerpt ? `: ${post.excerpt}` : ""}`).join("\n")}
+
+`
+    : ""
+}## For recruitment agencies
 
 - A listing is free: a card in the directory and a detailed agency page.
 - A Premium listing costs $49 USD a month or $490 USD a year and adds images, video, team and leadership profiles and customer testimonials.

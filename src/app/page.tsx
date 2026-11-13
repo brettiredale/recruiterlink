@@ -12,6 +12,7 @@ import {
   SearchBox,
   SectionHeading,
 } from "@/components";
+import { LatestArticles } from "@/features/blog/LatestArticles";
 import { HomeDirectory, homeCountrySlugFor } from "@/features/home-directory";
 import { getCountries, getTotals } from "@/lib/directory";
 import { homeFaqs } from "@/lib/faq";
@@ -125,6 +126,8 @@ export default async function HomePage() {
           </div>
         </Container>
       </section>
+
+      <LatestArticles />
 
       <section aria-labelledby="faq-heading" className="pt-10 pb-[72px]">
         <Container width="narrow">

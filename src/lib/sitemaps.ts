@@ -4,6 +4,7 @@
  * `revalidateDirectory`. Only pages search engines are asked to index are
  * listed (see `src/lib/indexability.ts`).
  */
+import { getBlogSitemapEntries } from "@/features/blog/data";
 import {
   getAgencySitemapEntries,
   getCountries,
@@ -14,6 +15,8 @@ import {
 } from "./directory";
 import {
   agencyPath,
+  blogPath,
+  blogPostPath,
   cityPath,
   citySpecialismPath,
   countriesPath,
@@ -63,9 +66,15 @@ function chunkNames(prefix: string, count: number): string[] {
 
 /** Names of every sitemap file, in the order the index lists them. */
 export async function sitemapNames(): Promise<string[]> {
-  const [totals, pairs] = await Promise.all([getTotals(), getIndexableCitySpecialismPairs()]);
+  const [totals, pairs, posts] = await Promise.all([
+    getTotals(),
+    getIndexableCitySpecialismPairs(),
+    getBlogSitemapEntries(),
+  ]);
   return [
     "pages",
+    // Listed once the blog has a post (an empty blog is not indexed).
+    ...(posts.length > 0 ? ["blog"] : []),
     "countries",
     "specialisms",
     "cities",
@@ -81,6 +90,14 @@ export async function sitemapUrls(name: string): Promise<SitemapUrl[] | null> {
     return ["/", countriesPath, specialismsPath, forAgenciesPath, "/about", "/contact"].map(
       (path) => ({ path }),
     );
+  }
+  if (name === "blog") {
+    const posts = await getBlogSitemapEntries();
+    if (posts.length === 0) return null;
+    return [
+      { path: blogPath, lastModified: posts.map((post) => post.updatedAt).sort().at(-1)?.slice(0, 10) },
+      ...posts.map((post) => ({ path: blogPostPath(post.slug), lastModified: post.updatedAt.slice(0, 10) })),
+    ];
   }
   if (name === "countries") {
     const countries = await getCountries();

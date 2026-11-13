@@ -16,8 +16,10 @@ export const AGENCIES_PER_PAGE = 24;
 export const RESERVED_TOP_LEVEL_SLUGS = [
   "about",
   "account",
+  "admin",
   "agencies",
   "api",
+  "blog",
   "contact",
   "countries",
   "for-agencies",
@@ -32,7 +34,6 @@ export const RESERVED_TOP_LEVEL_SLUGS = [
   "specialisms",
   // Not routes today, but kept free for later or used by the framework.
   "_next",
-  "admin",
   "cities",
   "favicon.ico",
   "login",
@@ -117,4 +118,26 @@ export function parsePageSegment(segment: string): number | null {
   if (!/^[1-9][0-9]{0,5}$/.test(segment)) return null;
   const page = Number(segment);
   return page >= 2 ? page : null;
+}
+
+// The blog.
+export const blogPath = "/blog";
+
+export function blogPostPath(slug: string): string {
+  return `/blog/${slug}`;
+}
+
+/** Page N of the blog's list (page 1 is /blog itself). */
+export function blogPagePath(page: number): string {
+  return pagedPath(blogPath, page);
+}
+
+// The admin area (site admins only). Private: never indexed or in a sitemap.
+export const adminPath = "/admin";
+export const adminBlogPath = "/admin/blog";
+export const adminNewPostPath = "/admin/blog/new";
+export const adminConnectPath = "/admin/connect";
+
+export function adminPostPath(id: string): string {
+  return `/admin/blog/${id}`;
 }

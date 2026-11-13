@@ -55,7 +55,7 @@ test("slugs must be lowercase words joined by single hyphens", () => {
 test("reserved words can never be read as a country", () => {
   for (const word of ["search", "agencies", "countries", "specialisms", "for-agencies",
     "about", "contact", "legal", "api", "styleguide", "sitemap.xml", "sitemaps", "robots.txt",
-    "llms.txt", "SEARCH"]) {
+    "llms.txt", "blog", "admin", "SEARCH"]) {
     assert.equal(isReservedTopLevelSlug(word), true, word);
   }
   assert.equal(isReservedTopLevelSlug("spain"), false);

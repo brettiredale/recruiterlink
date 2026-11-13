@@ -193,7 +193,8 @@ export const legacyRedirects: RedirectRule[] = [
   { source: "/job-boost-engine/:path*", destination: "/", permanent: true },
   { source: "/agency-videos", destination: "/", permanent: true },
   { source: "/admin-access", destination: "/", permanent: true },
-  { source: "/admin/:path*", destination: "/", permanent: true },
+  // The old site's /admin pages are not redirected: /admin is now this
+  // site's own admin area (private, never indexed).
   { source: "/jobseeker/:path*", destination: "/", permanent: true },
 ];
 

@@ -20,6 +20,15 @@ export function getSupabaseServerClient(): SupabaseClient<Database> {
         autoRefreshToken: false,
         detectSessionInUrl: false,
       },
+      global: {
+        // Every database answer is fetched fresh. Pages are cached one level
+        // up, in "use cache" functions tagged with what they show, and the
+        // refresh helpers clear those tags. Without this, the framework also
+        // keeps each raw answer for a while under no tag, so a page rebuilt
+        // straight after a change could be rebuilt from the old answer and
+        // then stored again.
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      },
     });
   }
   return client;

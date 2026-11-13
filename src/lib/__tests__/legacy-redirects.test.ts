@@ -66,14 +66,18 @@ test("old fixed pages go to their new equivalents", () => {
     "/job-boost-engine/results/abc": "/",
     "/agency-videos": "/",
     "/auth": "/for-agencies",
-    "/admin": "/",
-    "/admin/video-transcription": "/",
     "/jobseeker/dashboard": "/",
     "/registration-success": "/for-agencies",
     "/sitemap-agencies-2.xml": "/sitemap.xml",
     "/sitemap-static.xml": "/sitemap.xml",
   };
   for (const [from, to] of Object.entries(expected)) assert.equal(follow(from), to, from);
+});
+
+test("the admin area and the blog are never redirected by old-site rules", () => {
+  for (const path of ["/admin", "/admin/blog", "/admin/blog/new", "/admin/connect", "/blog", "/blog/some-post"]) {
+    assert.equal(follow(path), null, path);
+  }
 });
 
 test("older agency addresses go to /agencies/<slug>; account pages do not", () => {
