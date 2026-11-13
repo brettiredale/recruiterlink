@@ -9,7 +9,7 @@ import { Notice, inputClass } from "@/features/account/ui";
 import { adminBlogPath, adminPostPath, blogPostPath } from "@/lib/routes";
 import { deletePost, savePost, type SaveResult } from "./admin-actions";
 import { markdownWords, renderMarkdown, videoEmbedUrl } from "./markdown";
-import { htmlToMarkdown, isRichPaste } from "./paste-markdown";
+import { blockPadding, htmlToMarkdown, isBlockPaste, isRichPaste } from "./paste-markdown";
 import { ImagePrepError, prepareImage } from "./prepare-image";
 import { EXCERPT_MAX, TITLE_MAX, cleanTags, formatLongDate, slugify, type PostErrors, type PostInput } from "./rules";
 
@@ -448,7 +448,15 @@ export function BlogEditor({ post, notice }: { post: EditorPost; notice?: string
     const md = htmlToMarkdown(html);
     if (!md) return;
     event.preventDefault();
-    edit(() => ({ text: md }));
+    const el = area.current;
+    // Whole paragraphs, headings and lists go on their own lines, so they
+    // never run into the text before or after the cursor.
+    const [lead, trail] =
+      el && isBlockPaste(html, md)
+        ? blockPadding(el.value.slice(0, el.selectionStart), el.value.slice(el.selectionEnd))
+        : ["", ""];
+    const end = lead.length + md.length;
+    edit(() => ({ text: `${lead}${md}${trail}`, select: [end, end] }));
     setMessage({ tone: "info", text: "Pasted and converted. Check the preview." });
   }
 

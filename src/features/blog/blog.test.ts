@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { isPrivateIp, sniffImage } from "./image-check.ts";
+import { blockPadding, isBlockPaste } from "./paste-markdown.ts";
 import { firstImage, markdownWords, readingMinutes, renderMarkdown, safeHref, videoEmbedUrl } from "./markdown.ts";
 import {
   agentBodyProblem,
@@ -164,4 +165,23 @@ test("tables are wrapped so they can scroll on phones", () => {
   const html = renderMarkdown("| A | B |\n|---|---|\n| 1 | 2 |");
   assert.match(html, /^<div class="blog-table"><table>[\s\S]*<\/table><\/div>/);
   assert.doesNotMatch(renderMarkdown("<table><tr><td>x</td></tr></table>"), /<table>/);
+});
+
+test("pasted blocks get one blank line from the text around them", () => {
+  assert.deepEqual(blockPadding("", ""), ["", ""]);
+  assert.deepEqual(blockPadding("Before", "After"), ["\n\n", "\n\n"]);
+  assert.deepEqual(blockPadding("Before\n", "\nAfter"), ["\n", "\n"]);
+  assert.deepEqual(blockPadding("Before\n\n", "\n\nAfter"), ["", ""]);
+  assert.deepEqual(blockPadding("Before\n\n", "After"), ["", "\n\n"]);
+  assert.deepEqual(blockPadding("Before", ""), ["\n\n", ""]);
+  assert.deepEqual(blockPadding("", "After"), ["", "\n\n"]);
+});
+
+test("only whole paragraphs, headings and lists count as a block paste", () => {
+  assert.equal(isBlockPaste("<p>One</p>", "One"), true);
+  assert.equal(isBlockPaste('<b style="font-weight:normal"><h2>A</h2></b>', "## A"), true);
+  assert.equal(isBlockPaste("<ul><li>One</li></ul>", "- One"), true);
+  assert.equal(isBlockPaste("<div>A</div><div>B</div>", "A\n\nB"), true);
+  assert.equal(isBlockPaste("<span>a few</span> <b>words</b>", "a few **words**"), false);
+  assert.equal(isBlockPaste('<a href="https://example.com">link</a>', "[link](https://example.com)"), false);
 });
