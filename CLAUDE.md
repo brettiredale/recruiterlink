@@ -316,7 +316,7 @@ Carried over from `HANDOVER-open-questions.md` on branch `handover-open-question
 
 1. Premium limits: ANSWERED (see Design direction).
 2. Firecrawl and AI keys: ANSWERED (see AI service).
-3. Stripe keys in Vercel, for when Premium payments are built.
+3. Stripe keys in Vercel: ANSWERED. `STRIPE_SECRET_KEY` (Sensitive, Production and Preview) added 13 Nov 2026 = restricted key `recruiterlink-vercel` on Magic Hire Technologies (acct_1UBJbnAuVFaJ0APt), Stripe's "Recurring subscriptions and billing" template. The `RecruiterLink` key tagged Agent is Claude's read-only key, not the site's. `STRIPE_WEBHOOK_SECRET` is added when the webhook route is built. Every Checkout Session must pass `managed_payments: { enabled: false }` (Managed Payments is on by default on this account).
 4. Delete the 3 test rows in `public.listing_requests` (email `claude-form-test@example.com`)?
 5. Last 18 city photos: about $4 of fal.ai credit. Top up, or leave them?
 6. Logo pink `#EE1E80` and button pink differ slightly. Match them, or leave?
