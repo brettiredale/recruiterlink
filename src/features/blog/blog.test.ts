@@ -148,10 +148,16 @@ test("images are recognised by their content, and SVG is refused", () => {
 });
 
 test("private network addresses are refused for image downloads", () => {
-  for (const ip of ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "169.254.169.254", "::1", "fd00::1", "::ffff:10.0.0.1"]) {
+  for (const ip of ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "169.254.169.254", "::1", "::", "fd00::1",
+    "::ffff:10.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe", "0:0:0:0:0:ffff:7f00:0001", "::7f00:1", "64:ff9b::a00:1",
+    "2002:a00:1::", "fe80::1", "[::ffff:127.0.0.1]", "not-an-ip", "999.1.1.1"]) {
     assert.equal(isPrivateIp(ip), true, ip);
   }
-  for (const ip of ["8.8.8.8", "104.18.2.3", "2606:4700::1111"]) assert.equal(isPrivateIp(ip), false, ip);
+  for (const ip of ["8.8.8.8", "104.18.2.3", "2606:4700::1111", "2a00:1450:4009:81f::200e"]) {
+    assert.equal(isPrivateIp(ip), false, ip);
+  }
+  // The address a browser-style parser produces for https://[::ffff:127.0.0.1]/
+  assert.equal(isPrivateIp(new URL("https://[::ffff:127.0.0.1]/").hostname), true);
 });
 
 test("tables are wrapped so they can scroll on phones", () => {

@@ -45,23 +45,59 @@ export function sniffImage(bytes: Uint8Array): ImageKind | null {
   return null;
 }
 
-/** True for addresses inside private, local or reserved IP ranges. */
+/** The 8 groups of an IPv6 address as numbers, or null if it is not one. */
+function ipv6Groups(ip: string): number[] | null {
+  let text = ip.toLowerCase().replace(/^\[|\]$/g, "").split("%")[0];
+  // A dotted IPv4 tail ("::ffff:10.0.0.1") becomes two hex groups.
+  const tail = text.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (tail) {
+    const [a, b, c, d] = tail.slice(1).map(Number);
+    if ([a, b, c, d].some((n) => n > 255)) return null;
+    text = text.slice(0, -tail[0].length) + `${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
+  }
+  const halves = text.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const rest = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const missing = 8 - head.length - rest.length;
+  if (halves.length === 1 ? missing !== 0 : missing < 1) return null;
+  const parts = [...head, ...Array(halves.length === 2 ? missing : 0).fill("0"), ...rest];
+  if (parts.length !== 8 || parts.some((p) => !/^[0-9a-f]{1,4}$/.test(p))) return null;
+  return parts.map((p) => parseInt(p, 16));
+}
+
+function privateV4(ip: string): boolean {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+  const [a, b] = parts;
+  return (
+    a === 0 || a === 10 || a === 127 || a >= 224 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 192 && b === 0) ||
+    (a === 198 && (b === 18 || b === 19))
+  );
+}
+
+/**
+ * True for addresses that are private, local, reserved, or that hide an
+ * IPv4 address inside IPv6 (mapped, compatible, NAT64, 6to4) in any spelling.
+ * Anything that cannot be read as an address counts as private.
+ */
 export function isPrivateIp(ip: string): boolean {
-  const v4 = (address: string) => {
-    const [a, b] = address.split(".").map(Number);
-    return (
-      a === 0 || a === 10 || a === 127 || a >= 224 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      (a === 192 && b === 0) ||
-      (a === 198 && (b === 18 || b === 19))
-    );
-  };
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return v4(ip);
-  const v6 = ip.toLowerCase();
-  const mapped = v6.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-  if (mapped) return v4(mapped[1]);
-  return v6 === "::" || v6 === "::1" || /^f[cd]/.test(v6) || /^fe[89ab]/.test(v6) || /^ff/.test(v6) || v6.startsWith("64:ff9b:");
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return privateV4(ip);
+  const g = ipv6Groups(ip);
+  if (!g) return true;
+  const firstFiveZero = g.slice(0, 5).every((n) => n === 0);
+  // ::ffff:a.b.c.d (mapped) and ::a.b.c.d (compatible), including :: and ::1.
+  if (firstFiveZero && (g[5] === 0xffff || g[5] === 0)) return true;
+  if (g[0] === 0x64 && g[1] === 0xff9b) return true; // NAT64
+  if (g[0] === 0x2002) return true; // 6to4
+  if (g[0] === 0x2001 && g[1] === 0) return true; // Teredo
+  if ((g[0] & 0xfe00) === 0xfc00) return true; // unique local fc00::/7
+  if ((g[0] & 0xffc0) === 0xfe80) return true; // link local
+  if ((g[0] & 0xff00) === 0xff00) return true; // multicast
+  return false;
 }

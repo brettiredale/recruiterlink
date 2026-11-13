@@ -15,7 +15,7 @@ import { cleanLine, validatePost, type PostErrors, type PostInput } from "./rule
  */
 
 export type SaveResult =
-  | { ok: true; id: string; slug: string; status: "draft" | "published"; updatedAt: string }
+  | { ok: true; id: string; slug: string; status: "draft" | "published"; updatedAt: string; publishedAt: string }
   | { ok: false; message: string; errors?: PostErrors };
 
 const TRY_AGAIN = "Sorry, that did not save. Please try again in a minute.";
@@ -46,8 +46,11 @@ function asInput(value: unknown): PostInput | null {
   };
 }
 
-/** Creates (no id) or updates a post. */
-export async function savePost(id: string | null, value: unknown): Promise<SaveResult> {
+/**
+ * Creates (no id) or updates a post. `basedOn` is the version (last change
+ * time) the editor loaded; if the post has changed since, nothing is saved.
+ */
+export async function savePost(id: string | null, basedOn: string | null, value: unknown): Promise<SaveResult> {
   const input = asInput(value);
   const target = id === null ? null : parseUuid(id);
   if (!input || (id !== null && !target)) return { ok: false, message: TRY_AGAIN };
@@ -63,6 +66,8 @@ export async function savePost(id: string | null, value: unknown): Promise<SaveR
     const { data, error } = await supabase.rpc("admin_save_blog_post", {
       // The database makes a new post when there is no id.
       target: target as string,
+      // Null for a new post: there is nothing to compare with.
+      expected_updated_at: (target && typeof basedOn === "string" ? basedOn : null) as string,
       new_slug: post.slug,
       new_title: post.title,
       new_excerpt: post.excerpt,
@@ -76,6 +81,13 @@ export async function savePost(id: string | null, value: unknown): Promise<SaveR
     });
     if (error) {
       const problem = blogErrorFrom(error);
+      if (problem.code === "conflict") {
+        return {
+          ok: false,
+          message:
+            "This post was changed by someone else (perhaps Grokbot) after you opened it, so your changes were not saved. Copy anything you need, then reload the page to see the latest version.",
+        };
+      }
       if (problem.code === "slug_taken") {
         return {
           ok: false,
@@ -85,9 +97,22 @@ export async function savePost(id: string | null, value: unknown): Promise<SaveR
       }
       return { ok: false, message: refusal(problem.status, problem.message) };
     }
-    const saved = data as unknown as { id: string; slug: string; status: "draft" | "published"; updated_at: string };
+    const saved = data as unknown as {
+      id: string;
+      slug: string;
+      status: "draft" | "published";
+      updated_at: string;
+      published_at: string;
+    };
     refreshBlog();
-    return { ok: true, id: saved.id, slug: saved.slug, status: saved.status, updatedAt: saved.updated_at };
+    return {
+      ok: true,
+      id: saved.id,
+      slug: saved.slug,
+      status: saved.status,
+      updatedAt: saved.updated_at,
+      publishedAt: saved.published_at,
+    };
   } catch (error) {
     console.error("savePost failed:", error);
     return { ok: false, message: TRY_AGAIN };

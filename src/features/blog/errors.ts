@@ -32,6 +32,8 @@ export function blogErrorFrom(error: DbError): BlogError {
       return new BlogError("invalid", error.message, 400);
     case "23514":
       return new BlogError("invalid", "One of the values is not allowed (for example a cover image address that is not https).", 400);
+    case "40001":
+      return new BlogError("conflict", "This post was changed by someone else after you read it. Read it again, then make your change.", 409);
     case "P0002":
       return new BlogError("not_found", error.message, 404);
     default:

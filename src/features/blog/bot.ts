@@ -198,7 +198,7 @@ async function findPost(apiKey: string, slug: string): Promise<DbPost> {
   return data as unknown as DbPost;
 }
 
-async function save(apiKey: string, id: string | null, input: PostInput): Promise<DbPost> {
+async function save(apiKey: string, id: string | null, basedOn: string | null, input: PostInput): Promise<DbPost> {
   const checked = validatePost(input);
   if (!checked.ok) throw invalid(checked.errors);
   const post = checked.post;
@@ -206,6 +206,8 @@ async function save(apiKey: string, id: string | null, input: PostInput): Promis
     api_key: apiKey,
     // The database makes a new post when there is no id.
     target: id as string,
+    // The version the change was based on; null for a new post.
+    expected_updated_at: basedOn as string,
     new_slug: post.slug,
     new_title: post.title,
     new_excerpt: post.excerpt,
@@ -248,7 +250,7 @@ export async function getPost(apiKey: string, slug: string) {
 export async function createPost(apiKey: string, args: z.infer<typeof CreateArgs>) {
   const problem = agentBodyProblem(args.body_markdown);
   if (problem) throw new BlogError("invalid", `body_markdown: ${problem}`, 400, "body_markdown");
-  const saved = await save(apiKey, null, {
+  const saved = await save(apiKey, null, null, {
     title: args.title,
     slug: args.slug ?? "",
     excerpt: args.excerpt,
@@ -272,7 +274,7 @@ export async function updatePost(apiKey: string, args: z.infer<typeof UpdateArgs
   const status = args.status ?? current.status;
   // A draft going live is dated now, so it tops the blog.
   const goingLive = status === "published" && current.status !== "published";
-  const saved = await save(apiKey, current.id, {
+  const saved = await save(apiKey, current.id, current.updated_at, {
     title: args.title ?? current.title,
     slug: args.new_slug ?? current.slug,
     excerpt: args.excerpt ?? current.excerpt,

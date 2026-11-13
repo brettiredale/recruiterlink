@@ -707,6 +707,7 @@ export type Database = {
       admin_revoke_api_key: { Args: { target: string }; Returns: undefined }
       admin_save_blog_post: {
         Args: {
+          expected_updated_at: string
           new_author: string
           new_body: string
           new_cover_alt: string
@@ -742,6 +743,7 @@ export type Database = {
         Args: { api_key: string; post_slug: string }
         Returns: Json
       }
+      bot_key_is_live: { Args: { api_key: string }; Returns: boolean }
       bot_list_blog_posts: {
         Args: { api_key: string; max_rows?: number; only_status?: string }
         Returns: Json
@@ -749,6 +751,7 @@ export type Database = {
       bot_save_blog_post: {
         Args: {
           api_key: string
+          expected_updated_at: string
           new_author: string
           new_body: string
           new_cover_alt: string

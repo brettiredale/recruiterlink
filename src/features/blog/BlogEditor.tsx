@@ -199,6 +199,11 @@ export function BlogEditor({ post, notice }: { post: EditorPost; notice?: string
   const [savedStatus, setSavedStatus] = useState(post.status);
   const [savedSlug, setSavedSlug] = useState(post.slug);
   const [lastSaved, setLastSaved] = useState<string | null>(post.updatedAt);
+  // The version of the post this page is editing, and its saved date and
+  // time: sent with each save, so a change made meanwhile by someone else
+  // (or Grokbot) is never silently overwritten.
+  const [version, setVersion] = useState<string | null>(post.updatedAt);
+  const [savedPublishedAt, setSavedPublishedAt] = useState(post.publishedAt);
   const [slugTouched, setSlugTouched] = useState(!isNew);
   const [errors, setErrors] = useState<PostErrors>({});
   const [message, setMessage] = useState<{ tone: "success" | "error" | "info"; text: React.ReactNode } | null>(
@@ -469,22 +474,31 @@ export function BlogEditor({ post, notice }: { post: EditorPost; notice?: string
     if (busy || uploading) return;
     setBusy("saving");
     setMessage(null);
-    const keepTime = fields.date === post.publishedAt.slice(0, 10);
+    // What is sent is what counts as saved, even if typing carries on
+    // while the save is under way.
+    const sent = fields;
+    const today = new Date().toISOString().slice(0, 10);
+    const publishedAt =
+      sent.date === savedPublishedAt.slice(0, 10)
+        ? savedPublishedAt
+        : sent.date === today
+          ? new Date().toISOString()
+          : `${sent.date}T12:00:00.000Z`;
     const input: PostInput = {
-      title: fields.title,
+      title: sent.title,
       slug: effectiveSlug,
-      excerpt: fields.excerpt,
-      bodyMarkdown: fields.bodyMarkdown,
-      coverImageUrl: fields.coverImageUrl,
-      coverImageAlt: fields.coverImageAlt,
-      author: fields.author,
-      tags: cleanTags(fields.tags),
-      status: fields.status,
-      publishedAt: keepTime ? post.publishedAt : `${fields.date}T12:00:00.000Z`,
+      excerpt: sent.excerpt,
+      bodyMarkdown: sent.bodyMarkdown,
+      coverImageUrl: sent.coverImageUrl,
+      coverImageAlt: sent.coverImageAlt,
+      author: sent.author,
+      tags: cleanTags(sent.tags),
+      status: sent.status,
+      publishedAt,
     };
     let result: SaveResult;
     try {
-      result = await savePost(post.id, input);
+      result = await savePost(post.id, version, input);
     } catch {
       result = { ok: false, message: "That did not save. Check your connection and try again." };
     }
@@ -495,9 +509,10 @@ export function BlogEditor({ post, notice }: { post: EditorPost; notice?: string
       setMessage({ tone: "error", text: result.message });
       return;
     }
-    const now: Fields = { ...fields, slug: result.slug, status: result.status };
-    setFields(now);
-    setSaved(now);
+    setSaved({ ...sent, slug: result.slug, status: result.status });
+    setFields((current) => ({ ...current, slug: result.slug, status: result.status }));
+    setVersion(result.updatedAt);
+    setSavedPublishedAt(result.publishedAt);
     setSlugTouched(true);
     setErrors({});
     setLastSaved(result.updatedAt);
@@ -527,7 +542,7 @@ export function BlogEditor({ post, notice }: { post: EditorPost; notice?: string
     // heading above the editor (its title and status).
     if (isNew) router.replace(`${adminPostPath(result.id)}?notice=${result.status}`);
     else router.refresh();
-  }, [busy, uploading, fields, effectiveSlug, post.id, post.publishedAt, savedStatus, isNew, router]);
+  }, [busy, uploading, fields, effectiveSlug, post.id, version, savedPublishedAt, savedStatus, isNew, router]);
 
   // Ctrl+S or Cmd+S saves.
   useEffect(() => {

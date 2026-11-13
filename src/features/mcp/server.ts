@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { checkKey } from "@/features/blog/bot";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { BlogError } from "@/features/blog/errors";
 import { connectorInstructions } from "./instructions";
 import { TOOLS } from "./tools";
@@ -117,16 +117,19 @@ export async function mcpResponse(request: Request, apiKey: string): Promise<Res
   return Response.json(batch ? replies : replies[0], { headers: { "Cache-Control": "no-store" } });
 }
 
-/** The key is checked up front too, so a wrong key gets a clear answer before any tool call. */
+/**
+ * The key is checked up front too, so a wrong key gets a clear answer before
+ * any tool call. This check is not counted against the key's limits; each
+ * tool call is counted once, by the database, when it runs.
+ */
 export async function keyIsLive(apiKey: string | null): Promise<boolean> {
   if (!apiKey || !apiKey.startsWith("rl_live_") || apiKey.length > 200) return false;
-  try {
-    await checkKey(apiKey, false);
-    return true;
-  } catch (error) {
-    // A busy key is still a real key; let the tool calls report the limit.
-    return error instanceof BlogError && error.code === "rate_limited";
+  const { data, error } = await getSupabaseServerClient().rpc("bot_key_is_live", { api_key: apiKey });
+  if (error) {
+    console.error("[mcp] key check failed", error.code, error.message);
+    return false;
   }
+  return data === true;
 }
 
 export function bearerKey(request: Request): string | null {

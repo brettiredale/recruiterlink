@@ -47,13 +47,13 @@ export const TOOLS: McpTool[] = [
       "What RecruiterLink holds right now and the real page addresses to link to from articles: totals, the largest countries and cities, the specialisms, and how many blog posts exist. Call this first.",
     args: z.object({}),
     async run(apiKey) {
-      await blog.checkKey(apiKey, false);
-      const [totals, countries, cities, specialisms, posts] = await Promise.all([
+      // Listing the posts checks the key (and counts this one call).
+      const posts = await blog.listPosts(apiKey, { limit: 500 });
+      const [totals, countries, cities, specialisms] = await Promise.all([
         getTotals(),
         getCountries(),
         getTopCities(25),
         getSpecialisms(),
-        blog.listPosts(apiKey, { limit: 500 }),
       ]);
       return {
         site: siteUrl,
