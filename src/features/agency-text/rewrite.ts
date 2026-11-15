@@ -141,7 +141,7 @@ Rules for the writing:
 - Write in English, even when the website is in another language. Keep proper names as they are. ${spelling(agency.country_code)}
 - Third person, with the agency's name. Never "we", "our" or "us".
 - Plain, factual words. No marketing language: no "dedicated team", "top-tier", "passionate", "tailored/bespoke solutions", "seamless", "world-class", "landscape", "elevate", "empower", "go beyond", "pride", "commitment to excellence", "perfect match". A claim such as "leading" only as "describes itself as ...".
-- No names of individual people, no phone numbers, no email addresses, no street addresses, no prices or salaries, no current job adverts.
+- No names of individual people, not even first names of founders, owners or staff ("founded by its three directors" is fine). No phone numbers, no email addresses, no street addresses, no prices or salaries, no current job adverts.
 - Do not mention RecruiterLink or the website itself ("its website says").
 If site_status is not "agency", return empty facts, introduction and description.${feedback ? `\n\nYour last answer broke these rules: ${feedback}. Write it again without them.` : ""}`;
 }
@@ -266,11 +266,14 @@ export async function rewriteAgency(agency: AgencyInput, model: string, effort: 
       result.description = out.description?.trim() || null;
       result.facts = facts;
       result.checks = { ...checks, attempts: attempt };
-      const fixable = out.site_status === "agency" && (checks.banned.length > 0 || checks.firstPerson.length > 0);
+      const fixable =
+        out.site_status === "agency" &&
+        (checks.banned.length > 0 || checks.firstPerson.length > 0 || checks.people.length > 0);
       if (!fixable) break;
       feedback = [
         checks.banned.length ? `banned phrases (${checks.banned.join(", ")})` : "",
         checks.firstPerson.length ? `first-person words (${checks.firstPerson.join(", ")})` : "",
+        checks.people.length ? `names of people (${checks.people.join(", ")})` : "",
       ]
         .filter(Boolean)
         .join(" and ");

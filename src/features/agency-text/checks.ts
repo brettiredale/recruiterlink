@@ -69,6 +69,22 @@ export function firstPersonWords(text: string): string[] {
   return [...found];
 }
 
+/**
+ * People named in the text ("founded by Charlotte", "CEO Jane Smith"). The
+ * profile is about the agency; staff names stay off it.
+ */
+export function peopleNamed(text: string): string[] {
+  const found = new Set<string>();
+  const patterns = [
+    /\b(?:co-?founded|founded|led|run|owned|started|established|headed|set up|managed|directed) by ((?:[A-Z][\p{L}'-]+)(?:(?:,\s*|\s+and\s+|\s+)[A-Z][\p{L}'-]+)*)/gu,
+    /\b(?:founder|co-?founder|director|managing director|CEO|chief executive|owner|partner|principal)s?,?\s+([A-Z][\p{L}'-]+\s+[A-Z][\p{L}'-]+)/gu,
+  ];
+  for (const pattern of patterns) {
+    for (const match of text.matchAll(pattern)) found.add(match[1].trim());
+  }
+  return [...found];
+}
+
 export function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
@@ -102,6 +118,7 @@ export type TextChecks = {
   descriptionWords: number;
   banned: string[];
   firstPerson: string[];
+  people: string[];
   facts: number;
   factsVerified: number;
   unverifiedFacts: string[];
@@ -123,6 +140,7 @@ export function checkText(input: {
     descriptionWords: wordCount(input.description),
     banned: bannedPhrasesIn(both),
     firstPerson: firstPersonWords(both),
+    people: peopleNamed(both),
     facts: input.facts.length,
     factsVerified: verified.length,
     unverifiedFacts: input.facts.filter((f) => !verified.includes(f)).map((f) => f.fact),
@@ -141,6 +159,7 @@ export function verdictFor(siteStatus: string, checks: TextChecks): { verdict: V
   if (siteStatus !== "agency") return { verdict: "unusable", reason: "The website is broken, parked or belongs to someone else." };
   if (checks.banned.length > 0) return { verdict: "thin", reason: `Template phrases left: ${checks.banned.join(", ")}` };
   if (checks.firstPerson.length > 0) return { verdict: "thin", reason: `First-person words left: ${checks.firstPerson.join(", ")}` };
+  if (checks.people.length > 0) return { verdict: "thin", reason: `People named: ${checks.people.join(", ")}` };
   if (checks.factsVerified < MIN_VERIFIED_FACTS) {
     return { verdict: "thin", reason: `Only ${checks.factsVerified} facts found on the website (need ${MIN_VERIFIED_FACTS}).` };
   }

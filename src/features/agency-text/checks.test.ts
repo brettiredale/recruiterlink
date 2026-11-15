@@ -7,6 +7,7 @@ import {
   pickExtraPages,
   quoteInSource,
   normalise,
+  peopleNamed,
   verdictFor,
 } from "./checks.ts";
 
@@ -19,6 +20,13 @@ test("first-person words, but not the country US", () => {
   assert.deepEqual(firstPersonWords("We place nurses. Our clients"), ["we", "our"]);
   assert.deepEqual(firstPersonWords("Acme hires across the US and Canada."), []);
   assert.deepEqual(firstPersonWords("Contact us today."), ["us"]);
+});
+
+test("people named in the text", () => {
+  assert.deepEqual(peopleNamed("The agency was founded by Charlotte, Steph and Mikhaila in 2015."), ["Charlotte, Steph and Mikhaila"]);
+  assert.deepEqual(peopleNamed("Its founder Jane Smith started it."), ["Jane Smith"]);
+  assert.deepEqual(peopleNamed("Founded in 2000, it is led by a board."), []);
+  assert.deepEqual(peopleNamed("It is owned by Hays plc."), ["Hays"], "a company also matches; the retry removes it");
 });
 
 test("a quote matches through markdown, case and curly quotes", () => {
