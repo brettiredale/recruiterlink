@@ -51,7 +51,23 @@ export const BANNED_PHRASES = [
   "lasting relationships",
   "right fit",
   "perfect match",
+  // The profile is about the agency, not about its website.
+  "its website",
+  "the website",
+  "its site says",
+  "its site lists",
+  "on the site",
+  "its blog",
 ];
+
+/**
+ * Reported-speech words ("says", "states"). One is fine for a claim; the
+ * trial text used three or four per profile and read like a summary.
+ */
+export function reportedSpeech(text: string): number {
+  return [...text.matchAll(/\b(says|states|stated|claims|mentions|notes|describes itself|presents itself)\b/gi)].length;
+}
+export const MAX_REPORTED_SPEECH = 2;
 
 export function bannedPhrasesIn(text: string): string[] {
   const lower = text.toLowerCase();
@@ -119,6 +135,7 @@ export type TextChecks = {
   banned: string[];
   firstPerson: string[];
   people: string[];
+  reportedSpeech: number;
   facts: number;
   factsVerified: number;
   unverifiedFacts: string[];
@@ -141,6 +158,7 @@ export function checkText(input: {
     banned: bannedPhrasesIn(both),
     firstPerson: firstPersonWords(both),
     people: peopleNamed(both),
+    reportedSpeech: reportedSpeech(both),
     facts: input.facts.length,
     factsVerified: verified.length,
     unverifiedFacts: input.facts.filter((f) => !verified.includes(f)).map((f) => f.fact),
@@ -149,7 +167,9 @@ export function checkText(input: {
 }
 
 export const MIN_VERIFIED_FACTS = 4;
-export const MIN_DESCRIPTION_WORDS = 90;
+// The trial gave 11 accurate descriptions of 73 to 89 words, each backed by
+// 8 to 12 facts. A short, true description is better than none.
+export const MIN_DESCRIPTION_WORDS = 70;
 
 export type Verdict = "ready" | "thin" | "not_agency" | "unusable" | "fetch_failed";
 

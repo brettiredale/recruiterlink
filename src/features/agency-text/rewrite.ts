@@ -1,7 +1,15 @@
 import "server-only";
 import { getFirecrawlKey, getOpenAiKey } from "@/lib/env";
 import { isFetchableAddress } from "@/features/account/logo-address";
-import { checkText, pickExtraPages, verdictFor, type Fact, type TextChecks, type Verdict } from "./checks";
+import {
+  checkText,
+  MAX_REPORTED_SPEECH,
+  pickExtraPages,
+  verdictFor,
+  type Fact,
+  type TextChecks,
+  type Verdict,
+} from "./checks";
 
 // Writes an agency's introduction and description again from its own
 // website (growth plan step 2). Firecrawl reads the home page and up to two
@@ -26,7 +34,7 @@ export type RewriteResult = {
   description: string | null;
   facts: Fact[];
   checks: (TextChecks & { attempts: number }) | null;
-  pages: { url: string; chars: number; ok: boolean }[];
+  pages: { url: string; chars: number; ok: boolean; status: number | null; note: string | null }[];
   source_text: string;
   model: string;
   input_tokens: number;
@@ -39,30 +47,80 @@ const SOURCE_MAX_CHARS = 24_000;
 const PAGE_MAX_CHARS = 12_000;
 const MIN_SOURCE_CHARS = 400;
 
-type Page = { url: string; markdown: string; links: string[]; ok: boolean };
+type Page = {
+  url: string;
+  markdown: string;
+  links: string[];
+  ok: boolean;
+  status: number | null;
+  note: string | null;
+  credits: number;
+};
 
-async function scrape(url: string): Promise<Page> {
+// The second read of a home page that gave no text: wait for scripts to draw
+// the page, keep the whole page, and let Firecrawl switch proxy when blocked.
+const DEEP_READ = { waitFor: 4000, onlyMainContent: false, proxy: "auto" } as const;
+
+async function scrape(url: string, deep = false): Promise<Page> {
   const key = getFirecrawlKey();
   if (!key) throw new Error("FIRECRAWL_API_KEY is not set.");
+  const empty = { url, markdown: "", links: [], ok: false, status: null, credits: 1 };
   try {
     const response = await fetch("https://api.firecrawl.dev/v2/scrape", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ url, formats: ["markdown", "links"], onlyMainContent: true, blockAds: true }),
-      signal: AbortSignal.timeout(60_000),
+      body: JSON.stringify({
+        url,
+        formats: ["markdown", "links"],
+        onlyMainContent: true,
+        blockAds: true,
+        ...(deep ? DEEP_READ : {}),
+      }),
+      signal: AbortSignal.timeout(deep ? 90_000 : 60_000),
       cache: "no-store",
     });
-    if (!response.ok) return { url, markdown: "", links: [], ok: false };
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      return { ...empty, status: response.status, note: `Firecrawl ${response.status}: ${body.slice(0, 160)}` };
+    }
     const json = (await response.json()) as {
-      data?: { markdown?: string; links?: unknown[]; metadata?: { statusCode?: number } };
+      data?: {
+        markdown?: string;
+        links?: unknown[];
+        metadata?: { statusCode?: number; error?: string; creditsUsed?: number };
+      };
     };
     const status = json.data?.metadata?.statusCode ?? 200;
     const markdown = cleanMarkdown(json.data?.markdown ?? "");
     const links = (json.data?.links ?? []).filter((l): l is string => typeof l === "string");
-    return { url, markdown, links, ok: status < 400 && markdown.length > 0 };
-  } catch {
-    return { url, markdown: "", links: [], ok: false };
+    return {
+      url,
+      markdown,
+      links,
+      ok: status < 400 && markdown.length > 0,
+      status,
+      note: json.data?.metadata?.error ?? null,
+      credits: json.data?.metadata?.creditsUsed ?? 1,
+    };
+  } catch (error) {
+    return { ...empty, note: (error as Error).name === "TimeoutError" ? "Timed out." : (error as Error).message.slice(0, 160) };
   }
+}
+
+/**
+ * Reads the home page. When the first read gives too little text, reads it
+ * again the deep way, then (for a www address) the address without www.
+ */
+async function scrapeHome(home: URL): Promise<Page[]> {
+  const tries: Page[] = [await scrape(home.toString())];
+  const enough = (p: Page) => p.ok && p.markdown.length >= MIN_SOURCE_CHARS;
+  if (enough(tries[0])) return tries;
+  tries.push(await scrape(home.toString(), true));
+  if (enough(tries[1]) || !home.hostname.startsWith("www.")) return tries;
+  const apex = new URL(home.toString());
+  apex.hostname = home.hostname.slice(4);
+  tries.push(await scrape(apex.toString(), true));
+  return tries;
 }
 
 /** Drops images, bare links and repeated lines; keeps the words. */
@@ -140,9 +198,10 @@ If the website says little, write less. Never pad, repeat or guess.
 Rules for the writing:
 - Write in English, even when the website is in another language. Keep proper names as they are. ${spelling(agency.country_code)}
 - Third person, with the agency's name. Never "we", "our" or "us".
+- State facts plainly ("Acme recruits nurses in Leeds"), not as reported speech. Use "says", "states" or "describes itself as" at most twice in the whole text, only for a claim the agency makes about itself.
 - Plain, factual words. No marketing language: no "dedicated team", "top-tier", "passionate", "tailored/bespoke solutions", "seamless", "world-class", "landscape", "elevate", "empower", "go beyond", "pride", "commitment to excellence", "perfect match". A claim such as "leading" only as "describes itself as ...".
 - No names of individual people, not even first names of founders, owners or staff ("founded by its three directors" is fine). No phone numbers, no email addresses, no street addresses, no prices or salaries, no current job adverts.
-- Do not mention RecruiterLink or the website itself ("its website says").
+- Do not mention RecruiterLink, the website, its site or its blog ("its website says", "listed on the site").
 If site_status is not "agency", return empty facts, introduction and description.${feedback ? `\n\nYour last answer broke these rules: ${feedback}. Write it again without them.` : ""}`;
 }
 
@@ -225,13 +284,18 @@ export async function rewriteAgency(agency: AgencyInput, model: string, effort: 
   }
 
   try {
-    const first = await scrape(home.toString());
-    result.firecrawl_credits += 1;
-    const extra = first.ok ? pickExtraPages(first.links, home.toString()) : [];
-    const more = await Promise.all(extra.map((url) => scrape(url)));
-    result.firecrawl_credits += more.length;
+    const tries = await scrapeHome(home);
+    // The best home-page read is the one with the most text.
+    const first = tries.reduce((best, p) => (p.ok && p.markdown.length > (best.ok ? best.markdown.length : -1) ? p : best));
+    const base = first.ok ? first.url : home.toString();
+    const extra = first.ok ? pickExtraPages(first.links, base) : [];
+    // A site that needed the deep read needs it for its other pages too.
+    const deep = first !== tries[0];
+    const more = await Promise.all(extra.map((url) => scrape(url, deep)));
+    const all = [...tries, ...more];
+    result.firecrawl_credits = all.reduce((sum, p) => sum + p.credits, 0);
+    result.pages = all.map((p) => ({ url: p.url, chars: p.markdown.length, ok: p.ok, status: p.status, note: p.note }));
     const pages = [first, ...more];
-    result.pages = pages.map((p) => ({ url: p.url, chars: p.markdown.length, ok: p.ok }));
 
     const source = pages
       .filter((p) => p.ok)
@@ -268,12 +332,18 @@ export async function rewriteAgency(agency: AgencyInput, model: string, effort: 
       result.checks = { ...checks, attempts: attempt };
       const fixable =
         out.site_status === "agency" &&
-        (checks.banned.length > 0 || checks.firstPerson.length > 0 || checks.people.length > 0);
+        (checks.banned.length > 0 ||
+          checks.firstPerson.length > 0 ||
+          checks.people.length > 0 ||
+          checks.reportedSpeech > MAX_REPORTED_SPEECH);
       if (!fixable) break;
       feedback = [
         checks.banned.length ? `banned phrases (${checks.banned.join(", ")})` : "",
         checks.firstPerson.length ? `first-person words (${checks.firstPerson.join(", ")})` : "",
         checks.people.length ? `names of people (${checks.people.join(", ")})` : "",
+        checks.reportedSpeech > MAX_REPORTED_SPEECH
+          ? `"says", "states" or "describes itself" used ${checks.reportedSpeech} times (at most ${MAX_REPORTED_SPEECH})`
+          : "",
       ]
         .filter(Boolean)
         .join(" and ");

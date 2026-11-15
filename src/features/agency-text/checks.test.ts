@@ -8,6 +8,7 @@ import {
   quoteInSource,
   normalise,
   peopleNamed,
+  reportedSpeech,
   verdictFor,
 } from "./checks.ts";
 
@@ -27,6 +28,12 @@ test("people named in the text", () => {
   assert.deepEqual(peopleNamed("Its founder Jane Smith started it."), ["Jane Smith"]);
   assert.deepEqual(peopleNamed("Founded in 2000, it is led by a board."), []);
   assert.deepEqual(peopleNamed("It is owned by Hays plc."), ["Hays"], "a company also matches; the retry removes it");
+});
+
+test("reported speech and mentions of the website", () => {
+  assert.equal(reportedSpeech("Acme says it recruits. It states that it hires. It describes itself as a leader."), 3);
+  assert.equal(reportedSpeech("Acme recruits nurses in Leeds."), 0);
+  assert.deepEqual(bannedPhrasesIn("Its website highlights a pool of candidates."), ["its website"]);
 });
 
 test("a quote matches through markdown, case and curly quotes", () => {
