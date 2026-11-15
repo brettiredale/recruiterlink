@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   bannedPhrasesIn,
   checkText,
+  dropBadSentences,
   firstPersonWords,
   pickExtraPages,
   quoteInSource,
@@ -34,6 +35,13 @@ test("reported speech and mentions of the website", () => {
   assert.equal(reportedSpeech("Acme says it recruits. It states that it hires. It describes itself as a leader."), 3);
   assert.equal(reportedSpeech("Acme recruits nurses in Leeds."), 0);
   assert.deepEqual(bannedPhrasesIn("Its website highlights a pool of candidates."), ["its website"]);
+});
+
+test("drops only the sentences that break a rule", () => {
+  const out = dropBadSentences("Acme places nurses in Leeds. Testimonials on the site praise it. It was founded by Jane Smith. It covers Yorkshire.");
+  assert.equal(out.text, "Acme places nurses in Leeds. It covers Yorkshire.");
+  assert.equal(out.dropped, 2);
+  assert.deepEqual(dropBadSentences("Acme places nurses."), { text: "Acme places nurses.", dropped: 0 });
 });
 
 test("a quote matches through markdown, case and curly quotes", () => {

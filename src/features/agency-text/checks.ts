@@ -101,6 +101,18 @@ export function peopleNamed(text: string): string[] {
   return [...found];
 }
 
+/**
+ * Removes the sentences that still break a rule after the retry (one remark
+ * about "the site", one name). The rest of the text is checked again after.
+ */
+export function dropBadSentences(text: string): { text: string; dropped: number } {
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const kept = sentences.filter(
+    (s) => bannedPhrasesIn(s).length === 0 && peopleNamed(s).length === 0 && firstPersonWords(s).length === 0,
+  );
+  return { text: kept.join(" "), dropped: sentences.length - kept.length };
+}
+
 export function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }

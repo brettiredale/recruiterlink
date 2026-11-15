@@ -3,6 +3,7 @@ import { getFirecrawlKey, getOpenAiKey } from "@/lib/env";
 import { isFetchableAddress } from "@/features/account/logo-address";
 import {
   checkText,
+  dropBadSentences,
   MAX_REPORTED_SPEECH,
   pickExtraPages,
   verdictFor,
@@ -347,6 +348,33 @@ export async function rewriteAgency(agency: AgencyInput, model: string, effort: 
       ]
         .filter(Boolean)
         .join(" and ");
+    }
+
+    // The retry still left a bad sentence: drop it and check the rest again.
+    const left = result.checks;
+    if (
+      result.verdict === "thin" &&
+      left &&
+      (left.banned.length > 0 || left.people.length > 0 || left.firstPerson.length > 0)
+    ) {
+      const intro = dropBadSentences(result.introduction ?? "");
+      const desc = dropBadSentences(result.description ?? "");
+      const checks = checkText({
+        name: agency.name,
+        introduction: intro.text,
+        description: desc.text,
+        facts: result.facts ?? [],
+        source,
+      });
+      const { verdict, reason } = verdictFor("agency", checks);
+      if (verdict === "ready" && intro.text) {
+        const dropped = intro.dropped + desc.dropped;
+        result.verdict = verdict;
+        result.verdict_reason = `${reason} Dropped ${dropped} sentence${dropped === 1 ? "" : "s"} that broke the rules.`;
+        result.introduction = intro.text;
+        result.description = desc.text;
+        result.checks = { ...checks, attempts: left.attempts };
+      }
     }
     return result;
   } catch (error) {
