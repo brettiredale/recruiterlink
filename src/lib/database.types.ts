@@ -811,6 +811,25 @@ export type Database = {
         Args: { target_agency: string }
         Returns: string[]
       }
+      agency_text_trial_next: {
+        Args: { batch_size: number; trial_name: string }
+        Returns: {
+          agency_id: string
+          city: string
+          country: string
+          country_code: string
+          name: string
+          website: string
+        }[]
+      }
+      agency_text_trial_progress: {
+        Args: { trial_name: string }
+        Returns: Json
+      }
+      agency_text_trial_save: {
+        Args: { result: Json; target: string; trial_name: string }
+        Returns: undefined
+      }
       allow_code_attempt: { Args: { target_email: string }; Returns: boolean }
       allow_login_email: {
         Args: { target_email: string; visitor_ip: string }

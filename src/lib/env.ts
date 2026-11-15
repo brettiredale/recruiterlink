@@ -45,6 +45,11 @@ export function getFirecrawlKey(): string | null {
   return process.env.FIRECRAWL_API_KEY || null;
 }
 
+/** OpenAI key, for writing agency text. Server only; null when not set. */
+export function getOpenAiKey(): string | null {
+  return process.env.OPENAI_API_KEY || null;
+}
+
 /**
  * logo.dev publishable key (starts "pk_"). logo.dev treats it as public, but
  * it is only used on the server here, to fetch a logo once and store a copy.
