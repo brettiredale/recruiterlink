@@ -77,6 +77,7 @@ ${posts.map((post) => `- [${post.title}](${siteUrl}/blog/${post.slug})${post.exc
 
 ## Machine-readable data
 
+- Full guide for AI assistants, with every city page, its agency count and the articles in full: ${siteUrl}/llms-full.txt
 - Sitemap index: ${siteUrl}/sitemap.xml
 - Pages carry schema.org structured data (JSON-LD): EmploymentAgency on agency pages, ItemList on listing pages, BreadcrumbList on inner pages, and FAQPage where questions are shown.
 `;

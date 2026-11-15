@@ -1,7 +1,8 @@
 import "server-only";
 import { z } from "zod";
+import { announcePages } from "@/lib/indexnow";
 import { refreshBlog } from "@/lib/revalidate";
-import { blogPostPath } from "@/lib/routes";
+import { blogPath, blogPostPath } from "@/lib/routes";
 import { absoluteUrl } from "@/lib/site";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { BlogError, blogErrorFrom } from "./errors";
@@ -221,7 +222,10 @@ async function save(apiKey: string, id: string | null, basedOn: string | null, i
   });
   if (error) throw blogErrorFrom(error);
   refreshBlog();
-  return data as unknown as DbPost;
+  const saved = data as unknown as DbPost;
+  // A live article (new or changed) is announced to Bing straight away.
+  if (saved.status === "published") announcePages([blogPostPath(saved.slug), blogPath]);
+  return saved;
 }
 
 /** Checks the key (and counts the call) without doing anything else. */

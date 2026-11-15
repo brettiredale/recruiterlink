@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { sendEmail } from "@/lib/email/send";
 import { hasSupabaseSecretKey } from "@/lib/env";
+import { announcePages } from "@/lib/indexnow";
 import { getCountries, getRegions } from "@/lib/directory";
 import { buildRegionChoices } from "@/lib/regions";
 import { revalidateDirectory } from "@/lib/revalidate";
@@ -320,6 +321,8 @@ function refreshListingPages(listing: { slug: string; country_slug: string; city
     cities: listing.city_slug ? [{ countrySlug: listing.country_slug, citySlug: listing.city_slug }] : [],
     countries: [listing.country_slug],
   });
+  // Tell Bing and the other IndexNow search engines the page has changed.
+  announcePages([agencyPath(listing.slug)]);
 }
 
 /** Saves the introduction, description and specialisms of a listing. */
@@ -617,6 +620,7 @@ export async function reviewSubmission(formData: FormData): Promise<void> {
     slug = data;
     // A new agency changes its city, its country, the totals and the sitemaps.
     revalidateDirectory({ everything: true });
+    if (slug) announcePages([agencyPath(slug)]);
   } else {
     const { error } = await supabase.rpc("admin_reject_submission", { submission_id: submissionId, note });
     if (error) {

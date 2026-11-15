@@ -3,7 +3,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { refresh } from "next/cache";
 import { parseUuid } from "@/features/account/validate";
+import { announcePages } from "@/lib/indexnow";
 import { refreshBlog } from "@/lib/revalidate";
+import { blogPath, blogPostPath } from "@/lib/routes";
 import { getSupabaseSessionClient } from "@/lib/supabase/session";
 import { blogErrorFrom } from "./errors";
 import { cleanLine, validatePost, type PostErrors, type PostInput } from "./rules";
@@ -105,6 +107,8 @@ export async function savePost(id: string | null, basedOn: string | null, value:
       published_at: string;
     };
     refreshBlog();
+    // A live article (new or changed) is announced to Bing straight away.
+    if (saved.status === "published") announcePages([blogPostPath(saved.slug), blogPath]);
     return {
       ok: true,
       id: saved.id,
