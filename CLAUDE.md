@@ -292,6 +292,19 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 
 - Plausible (owner's account, added at the owner's request 12 Nov 2026): the script `https://plausible.io/js/pa-M4OyjrooNNHgCJBNLSh4m.js` is loaded by `Analytics` in `src/app/layout.tsx`, only when `VERCEL_ENV` is `production`, so previews and local runs are not counted. It sets no cookies, so no cookie banner is needed for it.
 
+## Bing and AI assistants (built and live 15 Nov 2026, owner approved; commit 0915146)
+
+Step 1 of the owner's 5-step traffic plan. Steps 2 to 5 are not approved yet.
+
+- `robots.txt` (`src/app/robots.ts`) names 12 AI crawlers (`AI_CRAWLERS`) in their own group. A named group replaces the `*` group for that crawler, so it carries the same `DISALLOW` list. Change both together.
+- `/llms-full.txt` (`src/app/llms-full.txt/route.ts`): the long guide for AI assistants, about 567 KB. It lists the same pages as the sitemaps (every indexable country, city and city + specialism page, with real agency counts), the home FAQ and up to 40 published articles in full. `/llms.txt` links to it.
+- IndexNow (Bing, Yandex, Seznam, Naver; Google does not take part): the key is `INDEXNOW_KEY` in `src/lib/indexnow.ts`, served at `/indexnow-key.txt`. It is public by design, not a secret. `announcePages(paths)` pings after the response and only when the site is indexable (production). It runs when a listing is saved or approved (`src/features/account/actions.ts`) and when an article is published or changed (`src/features/blog/bot.ts`, `admin-actions.ts`). A new page type must call it too.
+- `node scripts/indexnow-sitemap.mjs` sends every sitemap address in one go (`--dry-run` only counts). First run 15 Nov 2026: 30,848 addresses in 4 batches, all accepted. The first batch got HTTP 403 because Bing had not yet read the new key file; sending it again a minute later got 200. Run the script again after a bulk change to many pages.
+- Bing Webmaster Tools: the `msvalidate.01` tag is in the page head (`metadata.verification` in `src/app/layout.tsx`), the same code as the owner's other sites. The owner still has to add recruiterlink.com there and submit `https://recruiterlink.com/sitemap.xml`.
+- Plausible "AI Referral" event (`AI_REFERRAL_JS` in `src/app/layout.tsx`): sent once per visit when the visitor comes from ChatGPT, Gemini, Copilot, Perplexity or Claude (by `utm_source` or referrer), with the property `source`. Paid clicks are left out. The owner still has to add the custom event goal "AI Referral" in Plausible, or the events are not shown.
+- Tested: lint, types, 100 unit tests, production build; robots, key file, head tag and guide on a local production build and on the live site; 60 of 60 sampled guide links answer 200; the event code against 9 sample visits. Not tested: the automatic ping on a real listing edit or article publish, and the Plausible event in a real browser (both run on production only).
+- Local build trap: on a Mac with many cores `npm run build` fails with "Could not load specialisms: canceling statement due to statement timeout". 13 build workers overload the `specialism_stats` view (about 450 ms alone) past the anon role's 3 second limit. Vercel builds are fine. For a local build add `cpus: 4` under `experimental` in `next.config.ts` for that run, then `git checkout next.config.ts`.
+
 ## Blog, admin area and Grokbot connector (built 13 Nov 2026; owner approved and live 13 Nov 2026 together with the admin sign-in)
 
 The owner asked for a blog in the same format, structure and design as the Brainy job boards' blogs (repo `brettiredale/brainy`: `app/blog`, `components/blog`, `components/admin/BlogPostEditor.tsx`, `lib/mcp`), with images and video, an admin section, and an MCP + API so Grokbot can post, edit and remove articles. Same structure as Brainy, drawn in RecruiterLink's own palette and fonts.
