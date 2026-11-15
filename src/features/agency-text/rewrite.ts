@@ -296,6 +296,16 @@ export async function rewriteAgency(agency: AgencyInput, model: string, effort: 
     const all = [...tries, ...more];
     result.firecrawl_credits = all.reduce((sum, p) => sum + p.credits, 0);
     result.pages = all.map((p) => ({ url: p.url, chars: p.markdown.length, ok: p.ok, status: p.status, note: p.note }));
+    // Out of credits (402) or over the rate limit (429) says nothing about the
+    // agency's site: fail the row so the full run picks it up again.
+    const limited = all.find((p) => p.status === 402 || p.status === 429);
+    if (limited) {
+      result.status = "failed";
+      result.verdict = "fetch_failed";
+      result.verdict_reason = "Firecrawl refused the read.";
+      result.error = `Firecrawl ${limited.status}: ${limited.note ?? ""}`.slice(0, 300);
+      return result;
+    }
     const pages = [first, ...more];
 
     const source = pages
