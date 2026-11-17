@@ -14,7 +14,7 @@ export const maxDuration = 300;
 // on a preview deployment and only with the run token (its SHA-256 is below).
 // mode=models lists the OpenAI models the key can use; mode=progress counts.
 
-const TOKEN_SHA256 = "c5cf06c7f67c992aad86f4f0155b7089a5737c203e333f4edddb8317d4c92d3c";
+const TOKEN_SHA256 = "3b1140c3f53d8f55ac5af9001da16cb4e69cb869786190bcced62c79499e9081";
 const DEFAULT_MODEL = "gpt-5.4-mini";
 
 function tokenOk(token: string | null): boolean {
