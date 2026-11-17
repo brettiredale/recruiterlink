@@ -73,6 +73,16 @@ export function accountListingPath(agencyId: string): string {
   return `/account/listings/${agencyId}`;
 }
 
+/** The Premium pitch, shown straight after a claim and from the editor. */
+export function premiumUpsellPath(agencyId: string): string {
+  return `/account/listings/${agencyId}/premium`;
+}
+
+/** Where Stripe Checkout returns to after a Premium payment. */
+export function premiumDonePath(agencyId: string): string {
+  return `/account/listings/${agencyId}/premium/done`;
+}
+
 export function countryPath(countrySlug: string): string {
   return `/${countrySlug}`;
 }

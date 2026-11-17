@@ -65,7 +65,9 @@ export function Panel({
   description,
   children,
   tone = "pale",
+  id,
 }: {
+  id?: string;
   title: string;
   description?: React.ReactNode;
   children: React.ReactNode;
@@ -73,6 +75,7 @@ export function Panel({
 }) {
   return (
     <section
+      id={id}
       className={
         tone === "cream"
           ? "rounded-panel bg-[linear-gradient(to_bottom_right,var(--color-cream),var(--color-pink-tint))] p-5 sm:p-9"

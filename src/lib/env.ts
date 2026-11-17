@@ -53,3 +53,16 @@ export function getLogoDevKey(): string | null {
   const key = process.env.LOGO_DEV_PUBLISHABLE_KEY;
   return key?.startsWith("pk_") ? key : null;
 }
+
+/**
+ * Stripe secret key (a restricted key starting "rk_"). Server only. Used to
+ * start Premium checkouts, read their result and open the billing portal.
+ */
+export function getStripeSecretKey(): string {
+  return required("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY);
+}
+
+/** Signing secret of the Stripe webhook endpoint ("whsec_..."). Server only. */
+export function getStripeWebhookSecret(): string {
+  return required("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET);
+}

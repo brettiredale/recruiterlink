@@ -6,16 +6,48 @@ import { LogoImage } from "@/components";
 import { AccountShell, Panel } from "@/features/account/AccountShell";
 import { getAccount, getListing } from "@/features/account/data";
 import { ListingTextForm, LogoForm, type EditableListing } from "@/features/account/ListingEditor";
-import { Notice } from "@/features/account/ui";
+import { Notice, SubmitButton } from "@/features/account/ui";
 import { parseUuid } from "@/features/account/validate";
+import { openBillingPortal } from "@/features/premium/actions";
+import { PremiumEditor, type EditorContent } from "@/features/premium/PremiumEditor";
+import { buttonClasses } from "@/components";
 import { getSpecialisms } from "@/lib/directory";
-import { agencyPath, signInPath } from "@/lib/routes";
+import { agencyMediaUrl } from "@/lib/data/premium";
+import { agencyPath, premiumUpsellPath, signInPath } from "@/lib/routes";
+import { getSupabaseSessionClient } from "@/lib/supabase/session";
 import { isGenericSpecialism } from "@/lib/specialisms";
 import AccountLoading from "../../loading";
 
 export const metadata: Metadata = { title: "Edit your listing" };
 
 type Props = PageProps<"/account/listings/[id]">;
+
+type StoredContent = {
+  video_url: string | null;
+  photos: { id: string; path: string; caption: string | null }[];
+  team: { id: string; name: string; job_title: string | null; photo_path: string | null; linkedin_url: string | null }[];
+  testimonials: { id: string; quote: string; person: string; detail: string | null }[];
+};
+
+/** What this listing has added with Premium (kept after a lapse, so it can be tidied). */
+async function getEditorContent(agencyId: string): Promise<EditorContent> {
+  const supabase = await getSupabaseSessionClient();
+  const { data, error } = await supabase.rpc("my_premium_content", { target_agency: agencyId });
+  if (error) throw new Error(`my_premium_content failed: ${error.code} ${error.message}`);
+  const stored = data as unknown as StoredContent;
+  return {
+    videoUrl: stored.video_url,
+    photos: stored.photos.map((photo) => ({ id: photo.id, url: agencyMediaUrl(photo.path), caption: photo.caption })),
+    team: stored.team.map((person) => ({
+      id: person.id,
+      name: person.name,
+      jobTitle: person.job_title,
+      photoUrl: person.photo_path ? agencyMediaUrl(person.photo_path) : null,
+      linkedInUrl: person.linkedin_url,
+    })),
+    testimonials: stored.testimonials,
+  };
+}
 
 async function Editor({ params, searchParams }: Props) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
@@ -27,6 +59,8 @@ async function Editor({ params, searchParams }: Props) {
   const [listing, allSpecialisms] = await Promise.all([getListing(agencyId), getSpecialisms()]);
   // Not theirs, or not there: say the same thing either way.
   if (!listing) notFound();
+  const premium = listing.plan === "premium";
+  const content = premium ? await getEditorContent(listing.id) : null;
 
   const editable: EditableListing = {
     id: listing.id,
@@ -64,6 +98,32 @@ async function Editor({ params, searchParams }: Props) {
           This listing is now yours to manage. Check the details below and make it your own.
         </Notice>
       ) : null}
+      {query.notice === "billing-failed" ? (
+        <Notice tone="error">
+          We could not open your billing page just now. Please try again in a few minutes.
+        </Notice>
+      ) : null}
+
+      {premium ? (
+        <Panel
+          id="premium"
+          title="Your Premium page"
+          description="Add a video, photos, your team and what clients say. Each one appears on your public page as soon as you save it."
+        >
+          {content ? <PremiumEditor agencyId={listing.id} content={content} /> : null}
+        </Panel>
+      ) : (
+        <Panel
+          id="premium"
+          tone="cream"
+          title="Go Premium"
+          description="Be shown first in your city, specialisms and search, and add a video, photos, your team and testimonials to your page. $49 a month or $490 a year."
+        >
+          <Link href={premiumUpsellPath(listing.id)} className={buttonClasses("primary-small")}>
+            See what Premium adds
+          </Link>
+        </Panel>
+      )}
 
       <Panel
         title="Logo"
@@ -109,6 +169,17 @@ async function Editor({ params, searchParams }: Props) {
           </div>
         </dl>
       </Panel>
+
+      {premium ? (
+        <Panel title="Billing" description="Change between monthly and yearly, update your card, download invoices or cancel.">
+          <form action={openBillingPortal}>
+            <input type="hidden" name="agency_id" value={listing.id} />
+            <SubmitButton pendingLabel="Opening…" variant="navy">
+              Manage billing
+            </SubmitButton>
+          </form>
+        </Panel>
+      ) : null}
     </AccountShell>
   );
 }

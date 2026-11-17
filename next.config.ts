@@ -6,8 +6,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   experimental: {
-    // Logo uploads: files up to 1 MB, plus room for the form around them.
-    serverActions: { bodySizeLimit: "2mb" },
+    // Uploads: logos up to 1 MB and Premium photos up to 2 MB, plus room
+    // for the form around them.
+    serverActions: { bodySizeLimit: "3mb" },
   },
   turbopack: {
     rules: {
@@ -18,7 +19,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    // Agency logos and city photos live in our own Supabase storage
+    // Agency logos, Premium photos and city photos live in our own Supabase storage
     // buckets (public read).
     remotePatterns: [
       {
@@ -33,6 +34,13 @@ const nextConfig: NextConfig = {
         hostname: "ipfjjrngsjixgbmkezzg.supabase.co",
         port: "",
         pathname: "/storage/v1/object/public/city-photos/**",
+        search: "",
+      },
+      {
+        protocol: "https",
+        hostname: "ipfjjrngsjixgbmkezzg.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/agency-media/**",
         search: "",
       },
     ],

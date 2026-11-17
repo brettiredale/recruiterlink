@@ -189,6 +189,41 @@ export type Database = {
           },
         ]
       }
+      agency_photos: {
+        Row: {
+          agency_id: string
+          caption: string | null
+          created_at: string
+          id: string
+          path: string
+          sort_order: number
+        }
+        Insert: {
+          agency_id: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          path: string
+          sort_order?: number
+        }
+        Update: {
+          agency_id?: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          path?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_photos_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_specialisms: {
         Row: {
           agency_id: string
@@ -236,6 +271,111 @@ export type Database = {
             columns: ["specialism_id"]
             isOneToOne: false
             referencedRelation: "specialisms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_team_members: {
+        Row: {
+          agency_id: string
+          created_at: string
+          id: string
+          job_title: string | null
+          linkedin_url: string | null
+          name: string
+          photo_path: string | null
+          sort_order: number
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          id?: string
+          job_title?: string | null
+          linkedin_url?: string | null
+          name: string
+          photo_path?: string | null
+          sort_order?: number
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          id?: string
+          job_title?: string | null
+          linkedin_url?: string | null
+          name?: string
+          photo_path?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_team_members_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_testimonials: {
+        Row: {
+          agency_id: string
+          created_at: string
+          detail: string | null
+          id: string
+          person: string
+          quote: string
+          sort_order: number
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          person: string
+          quote: string
+          sort_order?: number
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          person?: string
+          quote?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_testimonials_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_videos: {
+        Row: {
+          agency_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          agency_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          agency_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_videos_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: true
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
@@ -1004,6 +1144,55 @@ export type Database = {
           new_website: string
         }
         Returns: string
+      }
+      add_my_photo: {
+        Args: { new_caption: string; new_path: string; target_agency: string }
+        Returns: string
+      }
+      add_my_team_member: {
+        Args: {
+          new_job_title: string
+          new_linkedin_url: string
+          new_name: string
+          new_photo_path: string
+          target_agency: string
+        }
+        Returns: string
+      }
+      add_my_testimonial: {
+        Args: {
+          new_detail: string
+          new_person: string
+          new_quote: string
+          target_agency: string
+        }
+        Returns: string
+      }
+      agency_stripe_customer: {
+        Args: { target_agency: string }
+        Returns: string
+      }
+      listing_position: { Args: { target_agency: string }; Returns: Json }
+      my_premium_content: { Args: { target_agency: string }; Returns: Json }
+      remove_my_premium_item: {
+        Args: { item_id: string; item_kind: string; target_agency: string }
+        Returns: string
+      }
+      set_agency_premium_from_stripe: {
+        Args: {
+          billing_interval: string
+          customer_id: string
+          event_id?: string
+          event_type?: string
+          premium: boolean
+          subscription_id: string
+          target_agency: string
+        }
+        Returns: Json
+      }
+      set_my_video: {
+        Args: { new_url: string; target_agency: string }
+        Returns: undefined
       }
       update_my_listing: {
         Args: {
