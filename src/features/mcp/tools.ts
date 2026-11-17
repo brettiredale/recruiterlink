@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import * as blog from "@/features/blog/bot";
 import { BlogError } from "@/features/blog/errors";
+import * as listings from "@/features/listings/bot";
 import { getCountries, getSpecialisms, getTopCities, getTotals } from "@/lib/directory";
 import {
   blogPath,
@@ -162,5 +163,87 @@ export const TOOLS: McpTool[] = [
     args: blog.UploadArgs,
     write: true,
     run: (apiKey, a) => blog.uploadImage(apiKey, a),
+  }),
+
+  // -------------------------------------------------------------------------
+  // Agency listings
+  // -------------------------------------------------------------------------
+
+  tool({
+    name: "get_listing_options",
+    title: "Listing options",
+    description:
+      "The countries (with their region codes) and specialism slugs a listing can use. Call once before adding listings, and pass only these values.",
+    args: z.object({}),
+    run: (apiKey) => listings.listingOptions(apiKey),
+  }),
+
+  tool({
+    name: "find_agency_listings",
+    title: "Find agency listings",
+    description:
+      "Check whether agencies are already listed, before adding them: pass up to 200 websites (each comes back listed true/false with its listings) and/or words in a name. Never add an agency whose website is already listed.",
+    args: listings.FindArgs,
+    run: (apiKey, a) => listings.findListings(apiKey, a),
+  }),
+
+  tool({
+    name: "get_agency_listing",
+    title: "Get agency listing",
+    description: "One listing in full by its slug: text, city, specialisms, plan (free or premium) and whether the agency has claimed it.",
+    args: listings.GetArgs,
+    run: (apiKey, a) => listings.getListing(apiKey, a.agency_slug),
+  }),
+
+  tool({
+    name: "create_agency_listing",
+    title: "Add agency listing",
+    description:
+      "Add one recruitment agency to the directory. It is live at once at /agencies/<slug>, free unless premium=true. The logo is found on the agency's website by itself. Refused (already_listed) when the website is already listed.",
+    args: listings.CreateArgs,
+    write: true,
+    run: (apiKey, a) => listings.createListing(apiKey, a),
+  }),
+
+  tool({
+    name: "create_agency_listings",
+    title: "Add agency listings (up to 25)",
+    description:
+      "Add up to 25 agencies in one call; each is added or refused on its own and the result says which. The quickest way to do the daily batch. Each listing counts as one write (30 a minute).",
+    args: listings.CreateManyArgs,
+    write: true,
+    run: (apiKey, a) => listings.createListings(apiKey, a),
+  }),
+
+  tool({
+    name: "update_agency_listing",
+    title: "Update agency listing",
+    description:
+      "Fix a listing by its slug, sending only what changes. Listings an agency has claimed belong to that agency and cannot be changed here.",
+    args: listings.UpdateArgs,
+    write: true,
+    idempotent: true,
+    run: (apiKey, a) => listings.updateListing(apiKey, a),
+  }),
+
+  tool({
+    name: "set_agency_premium",
+    title: "Give or remove Premium",
+    description:
+      "premium=true gives a listing Premium with no payment (for example a Lovelio client), and it stays Premium until set back. premium=false takes a given Premium away. Premium an agency pays for itself is never changed. Only when Brett asks.",
+    args: listings.PremiumArgs,
+    write: true,
+    idempotent: true,
+    run: (apiKey, a) => listings.setPremium(apiKey, a),
+  }),
+
+  tool({
+    name: "refresh_agency_logo",
+    title: "Find agency logo again",
+    description: "Look for the agency's logo again (its website, then logo.dev) and store it. For listings not claimed by their agency.",
+    args: listings.LogoArgs,
+    write: true,
+    idempotent: true,
+    run: (apiKey, a) => listings.refreshLogo(apiKey, a.agency_slug),
   }),
 ];

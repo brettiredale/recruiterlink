@@ -827,12 +827,46 @@ export type Database = {
         Args: { target_email: string; visitor_ip: string }
         Returns: boolean
       }
+      bot_agency_for_logo: {
+        Args: { agency_slug: string; api_key: string }
+        Returns: Json
+      }
       bot_check_key: {
         Args: { api_key: string; is_write: boolean }
         Returns: Json
       }
+      bot_create_agency: {
+        Args: {
+          api_key: string
+          branch_office?: boolean
+          make_premium?: boolean
+          new_city: string
+          new_country: string
+          new_description: string
+          new_introduction: string
+          new_name: string
+          new_region: string
+          new_specialisms: string[]
+          new_website: string
+          premium_note?: string
+        }
+        Returns: Json
+      }
       bot_delete_blog_post: {
         Args: { api_key: string; target: string }
+        Returns: Json
+      }
+      bot_find_agencies: {
+        Args: {
+          api_key: string
+          max_rows: number
+          name_query: string
+          websites: string[]
+        }
+        Returns: Json
+      }
+      bot_get_agency: {
+        Args: { agency_slug: string; api_key: string }
         Returns: Json
       }
       bot_get_blog_post: {
@@ -844,6 +878,7 @@ export type Database = {
         Args: { api_key: string; max_rows?: number; only_status?: string }
         Returns: Json
       }
+      bot_listing_options: { Args: { api_key: string }; Returns: Json }
       bot_save_blog_post: {
         Args: {
           api_key: string
@@ -859,6 +894,30 @@ export type Database = {
           new_tags: string[]
           new_title: string
           target: string
+        }
+        Returns: Json
+      }
+      bot_set_agency_premium: {
+        Args: {
+          agency_slug: string
+          api_key: string
+          note: string
+          premium: boolean
+        }
+        Returns: Json
+      }
+      bot_update_agency: {
+        Args: {
+          agency_slug: string
+          api_key: string
+          new_city: string
+          new_country: string
+          new_description: string
+          new_introduction: string
+          new_name: string
+          new_region: string
+          new_specialisms: string[]
+          new_website: string
         }
         Returns: Json
       }

@@ -1,6 +1,6 @@
 import { bearerKey, keyIsLive, mcpNoStream, mcpResponse } from "@/features/mcp/server";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * POST /api/mcp: the blog connector for AI agents that can send an

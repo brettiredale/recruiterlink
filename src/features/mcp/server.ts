@@ -82,7 +82,7 @@ async function handle(apiKey: string, message: Rpc) {
       return ok(id, {
         protocolVersion: VERSIONS.includes(asked) ? asked : VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "recruiterlink-blog", title: "RecruiterLink blog", version: "1.0.0" },
+        serverInfo: { name: "recruiterlink", title: "RecruiterLink blog and listings", version: "1.1.0" },
         instructions: connectorInstructions(),
       });
     }
