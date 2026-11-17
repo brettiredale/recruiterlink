@@ -349,7 +349,6 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
               <SectionHeading
                 id="specialisms-heading"
                 title={`${cityLabel(city)} recruitment agencies by specialism`}
-                description="Each of these has a page of its own."
                 size="sm"
                 className="!mb-[22px]"
               />

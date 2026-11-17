@@ -4,6 +4,8 @@ import { ArrowRightIcon } from "./icons";
 
 export type PopularSearchLinkProps = {
   label: string;
+  /** A smaller second line under the label (e.g. the full search phrase). */
+  detail?: string;
   href: string;
   /** Shows a number on the right instead of the arrow (city page lists). */
   count?: number;
@@ -15,6 +17,7 @@ export type PopularSearchLinkProps = {
 /** A row in a list of search links, with an arrow or a count on the right. */
 export function PopularSearchLink({
   label,
+  detail,
   href,
   count,
   tone = "light",
@@ -29,7 +32,14 @@ export function PopularSearchLink({
         className,
       )}
     >
-      <span className="min-w-0">{label}</span>
+      {detail ? (
+        <span className="min-w-0">
+          <span className="block">{label}</span>
+          <span className="mt-0.5 block text-sm font-normal text-muted">{detail}</span>
+        </span>
+      ) : (
+        <span className="min-w-0">{label}</span>
+      )}
       {count !== undefined ? (
         <span className="shrink-0 font-mono text-sm font-bold text-muted">
           <span className="sr-only">(</span>

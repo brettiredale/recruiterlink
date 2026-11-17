@@ -150,16 +150,16 @@ export default async function SpecialismPage({ params }: Props) {
             <SectionHeading
               id="cities-heading"
               title={`${heading} by city`}
-              description={`The ${cities.length} cities with the most. Each has a page listing its agencies.`}
               size="sm"
             />
             <LinkList>
               {cities.map((city) => (
                 <PopularSearchLink
                   key={city.id}
-                  label={`${specialismInPlaceHeading(specialism, cityLabel(city))}${
+                  label={`${cityLabel(city)}${
                     city.region || city.name === city.country.name ? "" : `, ${city.country.name}`
                   }`}
+                  detail={heading}
                   count={city.specialismAgencyCount}
                   href={citySpecialismPath(city.country.slug, city.slug, specialism.slug)}
                 />
