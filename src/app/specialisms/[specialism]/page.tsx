@@ -32,7 +32,6 @@ import {
   sentenceList,
   specialismAgenciesPhrase,
   specialismHeading,
-  specialismInPlaceHeading,
   specialismLabel,
 } from "@/lib/specialisms";
 import { agencyCountLabel } from "@/lib/text";
