@@ -6,13 +6,7 @@ import { linkOrigin } from "@/features/account/origin";
 import { parseUuid } from "@/features/account/validate";
 import { accountListingPath, accountPath, premiumDonePath, premiumUpsellPath, signInPath } from "@/lib/routes";
 import { createBillingPortal, createPremiumCheckout, isBillingInterval } from "@/lib/stripe";
-import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-
-async function stripeCustomerFor(agencyId: string): Promise<string | null> {
-  const { data, error } = await getSupabaseAdminClient().rpc("agency_stripe_customer", { target_agency: agencyId });
-  if (error) throw new Error(`agency_stripe_customer failed: ${error.code} ${error.message}`);
-  return data || null;
-}
+import { stripeCustomerFor } from "./billing";
 
 /** "Go Premium": sends the person to Stripe Checkout for their listing. */
 export async function startPremiumCheckout(formData: FormData): Promise<void> {

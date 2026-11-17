@@ -70,7 +70,7 @@ export function Panel({
   id?: string;
   title: string;
   description?: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   tone?: "pale" | "cream";
 }) {
   return (

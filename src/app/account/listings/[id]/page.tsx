@@ -9,6 +9,7 @@ import { ListingTextForm, LogoForm, type EditableListing } from "@/features/acco
 import { Notice, SubmitButton } from "@/features/account/ui";
 import { parseUuid } from "@/features/account/validate";
 import { openBillingPortal } from "@/features/premium/actions";
+import { stripeCustomerFor } from "@/features/premium/billing";
 import { PremiumEditor, type EditorContent } from "@/features/premium/PremiumEditor";
 import { buttonClasses } from "@/components";
 import { getSpecialisms } from "@/lib/directory";
@@ -60,7 +61,9 @@ async function Editor({ params, searchParams }: Props) {
   // Not theirs, or not there: say the same thing either way.
   if (!listing) notFound();
   const premium = listing.plan === "premium";
-  const content = premium ? await getEditorContent(listing.id) : null;
+  const [content, paid] = premium
+    ? await Promise.all([getEditorContent(listing.id), stripeCustomerFor(listing.id).then(Boolean)])
+    : [null, false];
 
   const editable: EditableListing = {
     id: listing.id,
@@ -170,7 +173,7 @@ async function Editor({ params, searchParams }: Props) {
         </dl>
       </Panel>
 
-      {premium ? (
+      {premium && paid ? (
         <Panel title="Billing" description="Change between monthly and yearly, update your card, download invoices or cancel.">
           <form action={openBillingPortal}>
             <input type="hidden" name="agency_id" value={listing.id} />
@@ -179,6 +182,8 @@ async function Editor({ params, searchParams }: Props) {
             </SubmitButton>
           </form>
         </Panel>
+      ) : premium ? (
+        <Panel title="Billing" description="Your Premium listing is included at no charge. There is nothing to pay." />
       ) : null}
     </AccountShell>
   );
