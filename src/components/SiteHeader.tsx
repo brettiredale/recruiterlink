@@ -53,7 +53,7 @@ export function SiteHeader({
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 min-[1120px]:block">
-          <ul className="flex items-center gap-x-7 text-base font-semibold">
+          <ul className="flex items-center justify-center gap-x-7 text-base font-semibold">
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link
