@@ -377,7 +377,7 @@ async function Results({ searchParams }: Pick<PageProps<"/search">, "searchParam
 
         {items.length > 0 ? (
           <>
-            <AgencyList agencies={items} minCardWidth={270} />
+            <AgencyList agencies={items} minCardWidth={270} trackAs="search" />
             {page > 1 || hasNext ? (
               <nav
                 aria-label="Search result pages"

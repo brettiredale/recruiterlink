@@ -291,6 +291,7 @@ The public pages, built 12 Nov 2026. Addresses are built only in
 ## Visitor statistics
 
 - Plausible (owner's account, added at the owner's request 12 Nov 2026): the script `https://plausible.io/js/pa-M4OyjrooNNHgCJBNLSh4m.js` is loaded by `Analytics` in `src/app/layout.tsx`, only when `VERCEL_ENV` is `production`, so previews and local runs are not counted. It sets no cookies, so no cookie banner is needed for it.
+- Agency card views and clicks (built 17 Nov 2026 on branch `claude/agency-stats`; waiting for the owner's approval): `TrackCards` (`src/components/TrackCards.tsx`) wraps the agency cards on search results, city pages, country pages, the home page and the "similar agencies" list on an agency page. A view = a card at least half on screen; a click = a press on it (middle-click too). Each counts once per card per page address. The browser sends batches to `/api/card-events`, which drops robots by user agent and refuses other sites, and writes only when `VERCEL_ENV` is `production` (previews answer with the header `X-Card-Events: not-counted`). Daily totals per agency and place live in `private.agency_card_stats` (migration `20261117145241_agency_card_stats`), written by `record_card_events` (service role only). The admin page `/admin/listings` searches every listing and shows views, clicks and click rate by period and place, through `admin_agency_card_stats` (site admins only). Not rate limited: a determined script could inflate a card's numbers.
 
 ## Bing and AI assistants (built and live 15 Nov 2026, owner approved; commit 0915146)
 

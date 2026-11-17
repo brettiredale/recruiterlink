@@ -6,6 +6,8 @@ import { PremiumBadge } from "./PremiumBadge";
 
 export type AgencyCardProps = {
   name: string;
+  /** The agency's id; lets TrackCards count this card's views and clicks. */
+  agencyId?: string;
   /** Address of the agency's profile page. */
   href: string;
   city?: string | null;
@@ -29,6 +31,7 @@ export function formatLocation(city?: string | null, country?: string | null) {
 /** Standard agency card. The whole card is one link to the profile. */
 export function AgencyCard({
   name,
+  agencyId,
   href,
   city,
   country,
@@ -45,6 +48,7 @@ export function AgencyCard({
 
   return (
     <article
+      data-agency-id={agencyId}
       className={cx(
         "group relative flex min-w-0 flex-col gap-2.5 rounded-card border border-line bg-white p-[22px] transition duration-200",
         "hover:-translate-y-0.5 hover:border-line-strong hover:shadow-card",

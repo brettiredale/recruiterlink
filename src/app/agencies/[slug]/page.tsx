@@ -259,7 +259,7 @@ export default async function AgencyPage({ params }: Props) {
                 href: cityPath(country.slug, city.slug),
               }}
             />
-            <AgencyList agencies={related} />
+            <AgencyList agencies={related} trackAs="related" />
           </Container>
         </section>
       ) : (

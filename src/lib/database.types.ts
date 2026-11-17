@@ -767,6 +767,17 @@ export type Database = {
       }
     }
     Functions: {
+      admin_agency_card_stats: {
+        Args: {
+          page_offset?: number
+          page_size?: number
+          place?: string
+          search_text?: string
+          since_day?: string
+          sort_by?: string
+        }
+        Returns: Json
+      }
       admin_approve_submission: {
         Args: { submission_id: string }
         Returns: string
@@ -871,6 +882,7 @@ export type Database = {
       }
       my_account: { Args: never; Returns: Json }
       my_listing: { Args: { target_agency: string }; Returns: Json }
+      record_card_events: { Args: { events: Json }; Returns: number }
       search_agencies: {
         Args: {
           city_slug?: string

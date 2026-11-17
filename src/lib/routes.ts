@@ -142,6 +142,8 @@ export const reviewPath = "/admin/review";
 export const adminBlogPath = "/admin/blog";
 export const adminNewPostPath = "/admin/blog/new";
 export const adminConnectPath = "/admin/connect";
+/** Every listing with its card views and clicks. */
+export const adminListingsPath = "/admin/listings";
 
 export function adminPostPath(id: string): string {
   return `/admin/blog/${id}`;

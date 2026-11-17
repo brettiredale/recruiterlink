@@ -2,12 +2,15 @@ import type { AgencySummary } from "@/lib/data";
 import { cityLabel } from "@/lib/regions";
 import { agencyPath } from "@/lib/routes";
 import { displaySpecialisms } from "@/lib/specialisms";
+import type { CardSource } from "@/lib/card-events";
 import { AgencyCard, AgencyGrid, type AgencyGridProps } from "./AgencyCard";
+import { TrackCards } from "./TrackCards";
 
 /** The props an AgencyCard needs, from an agency as the data layer returns it. */
 export function agencyCardProps(agency: AgencySummary) {
   return {
     name: agency.name,
+    agencyId: agency.id,
     href: agencyPath(agency.slug),
     city: agency.city ? cityLabel(agency.city) : null,
     country: agency.country.name,
@@ -22,6 +25,8 @@ export type AgencyListProps = {
   agencies: AgencySummary[];
   headingLevel?: "h2" | "h3" | "h4";
   minCardWidth?: AgencyGridProps["minCardWidth"];
+  /** Count the cards' views and clicks under this place in the admin stats. */
+  trackAs?: CardSource;
   className?: string;
 };
 
@@ -30,14 +35,16 @@ export function AgencyList({
   agencies,
   headingLevel = "h3",
   minCardWidth,
+  trackAs,
   className,
 }: AgencyListProps) {
   if (agencies.length === 0) return null;
-  return (
+  const grid = (
     <AgencyGrid minCardWidth={minCardWidth} className={className}>
       {agencies.map((agency) => (
         <AgencyCard key={agency.id} headingLevel={headingLevel} {...agencyCardProps(agency)} />
       ))}
     </AgencyGrid>
   );
+  return trackAs ? <TrackCards source={trackAs}>{grid}</TrackCards> : grid;
 }

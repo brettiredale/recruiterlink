@@ -2,12 +2,13 @@ import Link from "next/link";
 import { Container } from "@/components";
 import { cx } from "@/components/cx";
 import { signOutAdmin } from "@/features/account/actions";
-import { accountPath, adminBlogPath, adminConnectPath, adminPath, reviewPath } from "@/lib/routes";
+import { accountPath, adminBlogPath, adminConnectPath, adminListingsPath, adminPath, reviewPath } from "@/lib/routes";
 
-export type AdminSection = "overview" | "blog" | "connect" | "review";
+export type AdminSection = "overview" | "listings" | "blog" | "connect" | "review";
 
 const SECTIONS: { id: AdminSection | "account"; label: string; href: string }[] = [
   { id: "overview", label: "Overview", href: adminPath },
+  { id: "listings", label: "Listings", href: adminListingsPath },
   { id: "blog", label: "Blog", href: adminBlogPath },
   { id: "connect", label: "Connect Grokbot", href: adminConnectPath },
   { id: "review", label: "Review new listings", href: reviewPath },

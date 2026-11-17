@@ -312,7 +312,7 @@ export function CityListingPage({ listing }: { listing: CityListing }) {
           <SectionHeading id="agencies-heading" title={listTitle} size="sm" />
           {agencies.items.length > 0 ? (
             <>
-              <AgencyList agencies={agencies.items} minCardWidth={270} />
+              <AgencyList agencies={agencies.items} minCardWidth={270} trackAs="city" />
               <Pagination
                 className="mt-[34px]"
                 currentPage={page}

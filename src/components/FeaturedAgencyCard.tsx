@@ -7,6 +7,8 @@ import { PremiumBadge } from "./PremiumBadge";
 
 export type FeaturedAgencyCardProps = {
   name: string;
+  /** The agency's id; lets TrackCards count this card's views and clicks. */
+  agencyId?: string;
   /** Address of the agency's profile page. */
   href: string;
   city?: string | null;
@@ -27,6 +29,7 @@ export type FeaturedAgencyCardProps = {
 /** The large navy-to-indigo card that leads the featured agencies on the home page. */
 export function FeaturedAgencyCard({
   name,
+  agencyId,
   href,
   city,
   country,
@@ -44,6 +47,7 @@ export function FeaturedAgencyCard({
 
   return (
     <article
+      data-agency-id={agencyId}
       className={cx(
         "on-dark group relative flex min-w-0 flex-col gap-4 rounded-feature bg-[linear-gradient(160deg,var(--color-navy),var(--color-indigo))] p-6 text-white sm:p-9",
         className,

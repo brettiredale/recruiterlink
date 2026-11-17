@@ -143,7 +143,7 @@ export default async function CountryPage({ params }: PageProps<"/[country]">) {
               title={`Featured recruitment agencies in ${country.name}`}
               size="sm"
             />
-            <AgencyList agencies={featured} />
+            <AgencyList agencies={featured} trackAs="country" />
             <JsonLd
               data={agencyListJsonLd(
                 `Featured recruitment agencies in ${country.name}`,

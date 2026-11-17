@@ -17,6 +17,7 @@ import {
   CityPillLink,
   Container,
   FeaturedAgencyCard,
+  TrackCards,
   LinkList,
   PillGrid,
   PopularSearchLink,
@@ -221,33 +222,36 @@ export async function HomeDirectory({ countrySlug }: { countrySlug: string | nul
                 href: browseHref,
               }}
             />
-            <div className="flex flex-wrap items-stretch gap-4 sm:gap-[22px]">
-              <FeaturedAgencyCard
-                name={lead.name}
-                href={agencyCardProps(lead).href}
-                city={lead.city ? cityLabel(lead.city) : undefined}
-                country={lead.country.name}
-                logoFile={lead.logoPath}
-                summary={firstSentence(lead.introduction, 170) || null}
-                specialisms={agencyCardProps(lead).specialisms}
-                premium={lead.plan === "premium"}
-                className="flex-[1_1_420px]"
-              />
-              {beside.length > 0 ? (
-                <AgencyGrid className="min-w-0 flex-[1_1_560px]">
-                  {beside.map((agency) => (
+            <TrackCards source="home">
+              <div className="flex flex-wrap items-stretch gap-4 sm:gap-[22px]">
+                <FeaturedAgencyCard
+                  name={lead.name}
+                  agencyId={lead.id}
+                  href={agencyCardProps(lead).href}
+                  city={lead.city ? cityLabel(lead.city) : undefined}
+                  country={lead.country.name}
+                  logoFile={lead.logoPath}
+                  summary={firstSentence(lead.introduction, 170) || null}
+                  specialisms={agencyCardProps(lead).specialisms}
+                  premium={lead.plan === "premium"}
+                  className="flex-[1_1_420px]"
+                />
+                {beside.length > 0 ? (
+                  <AgencyGrid className="min-w-0 flex-[1_1_560px]">
+                    {beside.map((agency) => (
+                      <AgencyCard key={agency.id} {...agencyCardProps(agency)} />
+                    ))}
+                  </AgencyGrid>
+                ) : null}
+              </div>
+              {below.length > 0 ? (
+                <AgencyGrid className="mt-4 sm:mt-[22px]">
+                  {below.map((agency) => (
                     <AgencyCard key={agency.id} {...agencyCardProps(agency)} />
                   ))}
                 </AgencyGrid>
               ) : null}
-            </div>
-            {below.length > 0 ? (
-              <AgencyGrid className="mt-4 sm:mt-[22px]">
-                {below.map((agency) => (
-                  <AgencyCard key={agency.id} {...agencyCardProps(agency)} />
-                ))}
-              </AgencyGrid>
-            ) : null}
+            </TrackCards>
             <p className="mt-9 text-center">
               <ButtonLink href={browseHref} variant="navy" className="max-sm:w-full">
                 {country

@@ -6,7 +6,8 @@ import { AdminLoading, AdminShell, adminDateTime } from "@/features/admin/AdminS
 import { getPendingSubmissions } from "@/features/account/data";
 import { requireAdmin } from "@/features/admin/guard";
 import { listAdminPosts, listApiKeys } from "@/features/blog/admin-data";
-import { adminBlogPath, adminConnectPath, adminNewPostPath, adminPostPath, reviewPath } from "@/lib/routes";
+import { getListingStats, listingStatsQuery } from "@/features/admin/listing-stats";
+import { adminBlogPath, adminConnectPath, adminListingsPath, adminNewPostPath, adminPostPath, reviewPath } from "@/lib/routes";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -26,7 +27,12 @@ function Tile({ title, children, href, cta }: { title: string; children: React.R
 
 async function Overview() {
   const account = await requireAdmin();
-  const [posts, keys, submissions] = await Promise.all([listAdminPosts(), listApiKeys(), getPendingSubmissions()]);
+  const [posts, keys, submissions, stats] = await Promise.all([
+    listAdminPosts(),
+    listApiKeys(),
+    getPendingSubmissions(),
+    getListingStats(listingStatsQuery({})).catch(() => null),
+  ]);
   const waiting = submissions ?? [];
   const published = posts.filter((p) => p.status === "published").length;
   const drafts = posts.filter((p) => p.status === "draft");
@@ -40,7 +46,18 @@ async function Overview() {
       email={account.email}
       actions={<ButtonLink href={adminNewPostPath} variant="primary-small">New blog post</ButtonLink>}
     >
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
+        <Tile title="Listings" href={adminListingsPath} cta="See every listing">
+          {stats ? (
+          <p>
+            <strong className="text-navy">{stats.total.toLocaleString("en")}</strong> listings. In the last 30 days their
+            cards were seen <strong className="text-navy">{stats.sum_views.toLocaleString("en")}</strong> times and clicked{" "}
+            <strong className="text-navy">{stats.sum_clicks.toLocaleString("en")}</strong> times.
+          </p>
+          ) : (
+            <p>Search every listing and see how often its card is seen and clicked.</p>
+          )}
+        </Tile>
         <Tile title="Blog" href={adminBlogPath} cta="Open the blog">
           <p>
             <strong className="text-navy">{published}</strong> published,{" "}
