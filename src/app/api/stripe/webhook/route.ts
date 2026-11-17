@@ -23,8 +23,16 @@ const SUBSCRIPTION_EVENTS = new Set([
  * its real state is read back from Stripe before anything changes.
  */
 export async function POST(request: NextRequest) {
+  let secret: string;
+  try {
+    secret = getStripeWebhookSecret();
+  } catch {
+    // Not set up yet. A 503 makes Stripe retry once the secret is added.
+    console.error("Stripe webhook: STRIPE_WEBHOOK_SECRET is not set");
+    return new Response("Webhook not configured", { status: 503 });
+  }
   const body = await request.text();
-  const event = verifyWebhook<StripeEvent>(body, request.headers.get("stripe-signature"), getStripeWebhookSecret());
+  const event = verifyWebhook<StripeEvent>(body, request.headers.get("stripe-signature"), secret);
   if (!event) return new Response("Bad signature", { status: 400 });
 
   const object = event.data.object;
