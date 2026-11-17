@@ -10,7 +10,7 @@ import { getCountries, getRegions } from "@/lib/directory";
 import { buildRegionChoices } from "@/lib/regions";
 import { revalidateDirectory } from "@/lib/revalidate";
 import {
-  accountListingPath,
+  premiumUpsellPath,
   accountPath,
   adminPath,
   adminSignInPath,
@@ -159,7 +159,7 @@ async function finishSignIn(destination: SignInDestination): Promise<never> {
     const supabase = await getSupabaseSessionClient();
     const claimed = await supabase.rpc("claim_single_match");
     if (claimed.error) console.error("claim_single_match failed:", claimed.error.code, claimed.error.message);
-    if (claimed.data) redirect(`${accountPath}?notice=claimed`);
+    if (claimed.data) redirect(`${premiumUpsellPath(claimed.data)}?claimed=1`);
   } catch (error) {
     // `redirect` works by throwing; let it through.
     if (isRedirect(error)) throw error;
@@ -286,7 +286,8 @@ export async function claimListing(formData: FormData): Promise<void> {
     }
     redirect(`${accountPath}?notice=requested`);
   }
-  redirect(`${accountListingPath(agencyId)}?notice=claimed`);
+  // Show what Premium adds before the editor (the page links on to it).
+  redirect(`${premiumUpsellPath(agencyId)}?claimed=1`);
 }
 
 /** An owner approves or declines a colleague. */

@@ -15,6 +15,7 @@ import {
 import { ArrowRightIcon, PinIcon } from "@/components/icons";
 import {
   getAgency,
+  getAgencyPremiumContent,
   getFeaturedAgencies,
   getLegacyAgencySlug,
   getRelatedAgencies,
@@ -32,6 +33,7 @@ import { agencyJsonLd, notFoundMetadata, pageMetadata } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import { displaySpecialisms } from "@/lib/specialisms";
 import { summarise, toParagraphs } from "@/lib/text";
+import { PremiumShowcase } from "@/features/premium/PremiumShowcase";
 
 export const ensureStatic = "navigation";
 
@@ -93,6 +95,7 @@ export default async function AgencyPage({ params }: Props) {
   const introduction = toParagraphs(agency.introduction);
   const description = toParagraphs(agency.description);
   const hasText = introduction.length + description.length > 0;
+  const premiumContent = premium ? await getAgencyPremiumContent(agency) : null;
   const related =
     city && agency.cityId !== null
       ? await getRelatedAgencies(
@@ -245,6 +248,7 @@ export default async function AgencyPage({ params }: Props) {
             </Link>
           </aside>
         </Container>
+        {premiumContent ? <PremiumShowcase name={agency.name} content={premiumContent} /> : null}
       </article>
 
       {related.length > 0 && city ? (

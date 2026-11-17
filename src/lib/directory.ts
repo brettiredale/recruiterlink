@@ -49,6 +49,7 @@ import {
   cityTag,
   countryTag,
 } from "./cache-tags";
+import { EMPTY_PREMIUM_CONTENT, getPremiumContent } from "./data/premium";
 import { MIN_AGENCIES_TO_INDEX } from "./indexability";
 import { AGENCIES_PER_PAGE } from "./routes";
 import { GENERIC_SPECIALISM_SLUGS } from "./specialisms";
@@ -248,6 +249,14 @@ export async function getAgency(slug: string) {
   cacheLife("days");
   cacheTag(DIRECTORY_TAG, agencyTag(slug));
   return getAgencyBySlug(slug);
+}
+
+/** Video, photos, team and testimonials of a Premium listing. */
+export async function getAgencyPremiumContent(agency: { id: string; slug: string; plan: string }) {
+  "use cache";
+  cacheLife("days");
+  cacheTag(DIRECTORY_TAG, agencyTag(agency.slug));
+  return agency.plan === "premium" ? getPremiumContent(agency.id) : EMPTY_PREMIUM_CONTENT;
 }
 
 /** New slug for an old-site agency slug, or null. */
