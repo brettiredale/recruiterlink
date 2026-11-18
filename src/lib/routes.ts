@@ -29,6 +29,7 @@ export const RESERVED_TOP_LEVEL_SLUGS = [
   "llms.txt",
   "opengraph-image",
   "recruiters-in",
+  "recruitment-agency-events",
   "robots.txt",
   "search",
   "sitemap.xml",
@@ -158,3 +159,6 @@ export const adminListingsPath = "/admin/listings";
 export function adminPostPath(id: string): string {
   return `/admin/blog/${id}`;
 }
+
+/** The recruitment agency events page (Lovelio widget). */
+export const recruitmentAgencyEventsPath = "/recruitment-agency-events";

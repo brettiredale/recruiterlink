@@ -28,6 +28,7 @@ export const defaultFooterColumns: FooterColumn[] = [
     links: [
       { label: "About", href: "/about" },
       { label: "Blog", href: "/blog" },
+      { label: "Recruitment Agency Events", href: "/recruitment-agency-events" },
       { label: "Contact", href: "/contact" },
       { label: "Legal", href: "/legal" },
     ],

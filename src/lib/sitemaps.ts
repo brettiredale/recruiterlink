@@ -87,7 +87,7 @@ export async function sitemapNames(): Promise<string[]> {
 export async function sitemapUrls(name: string): Promise<SitemapUrl[] | null> {
   if (name === "pages") {
     // /search and /legal carry a noindex, so they are not listed.
-    return ["/", countriesPath, specialismsPath, forAgenciesPath, "/about", "/contact"].map(
+    return ["/", countriesPath, specialismsPath, forAgenciesPath, "/about", "/contact", "/recruitment-agency-events"].map(
       (path) => ({ path }),
     );
   }
