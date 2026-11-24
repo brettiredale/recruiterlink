@@ -24,3 +24,4 @@ export * from "./AgencyList";
 export * from "./CompactLinks";
 export * from "./PageIntro";
 export * from "./TrackCards";
+export * from "./VerifiablePeopleNote";

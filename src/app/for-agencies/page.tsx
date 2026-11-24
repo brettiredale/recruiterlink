@@ -7,6 +7,7 @@ import {
   PageIntro,
   PricingBanner,
   SectionHeading,
+  VerifiablePeopleNote,
 } from "@/components";
 import {
   PREMIUM_MONTHLY_USD,
@@ -119,6 +120,7 @@ export default async function ForAgenciesPage() {
               </div>
             </div>
             <div className="flex min-w-0 flex-col gap-4 rounded-card bg-white p-6 sm:p-8">
+              <VerifiablePeopleNote />
               <ButtonLink href={signInPath} variant="primary" className="w-full">
                 Sign in or list your agency
               </ButtonLink>

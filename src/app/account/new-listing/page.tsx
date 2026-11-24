@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { VerifiablePeopleNote } from "@/components";
 import { AccountShell, Panel } from "@/features/account/AccountShell";
 import { getAccount } from "@/features/account/data";
 import { NewListingForm } from "@/features/account/NewListingForm";
@@ -35,6 +36,7 @@ async function NewListing() {
       intro="Tell us about your agency. A member of the RecruiterLink team checks every new listing before it goes on the site, usually within two working days."
     >
       <Panel title="Your agency's details">
+        <VerifiablePeopleNote className="mb-7" />
         <NewListingForm
           domain={account.domain}
           countries={[...countries]
